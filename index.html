@@ -36,22 +36,105 @@
       return rows;
     };
 
-    const drawTable = sheet => {
+    function getHour(time) {
+      var time_array = time.split(":");
+
+      var hour = time_array[0];
+      var minute_and_am_or_pm = time_array[1];
+
+      var last_index = minute_and_am_or_pm.length ;
+      var am_or_pm = minute_and_am_or_pm.substring(last_index-2, last_index);
+      hour = parseInt(hour, 10);
+      if(am_or_pm == 'PM' && hour != 12) {
+        hour = hour + 12;
+      }
+      return hour;
+    }
+
+    function getMinute(time) {
+      var time_array = time.split(":");
+      var minute_and_am_or_pm = time_array[1];
+
+      var last_index = minute_and_am_or_pm.length ;
+      var minute = minute_and_am_or_pm.substring(0, last_index-2);
+      return minute;
+    }
+
+    var dates = {
+    convert:function(d) {
+        // Converts the date in d to a date-object. The input can be:
+        //   a date object: returned without modification
+        //  an array      : Interpreted as [year,month,day]. NOTE: month is 0-11.
+        //   a number     : Interpreted as number of milliseconds
+        //                  since 1 Jan 1970 (a timestamp)
+        //   a string     : Any format supported by the javascript engine, like
+        //                  "YYYY/MM/DD", "MM/DD/YYYY", "Jan 31 2009" etc.
+        //  an object     : Interpreted as an object with year, month and date
+        //                  attributes.  **NOTE** month is 0-11.
+        return (
+            d.constructor === Date ? d :
+            d.constructor === Array ? new Date(d[0],d[1],d[2]) :
+            d.constructor === Number ? new Date(d) :
+            d.constructor === String ? new Date(d) :
+            typeof d === "object" ? new Date(d.year,d.month,d.date) :
+            NaN
+        );
+    },
+    compare:function(a,b) {
+        // Compare two dates (could be of any type supported by the convert
+        // function above) and returns:
+        //  -1 : if a < b
+        //   0 : if a = b
+        //   1 : if a > b
+        // NaN : if a or b is an illegal date
+        // NOTE: The code inside isFinite does an assignment (=).
+        return (
+            isFinite(a=this.convert(a).valueOf()) &&
+            isFinite(b=this.convert(b).valueOf()) ?
+            (a>b)-(a<b) :
+            NaN
+        );
+    },
+    inRange:function(d,start,end) {
+        // Checks if date in d is between dates in start and end.
+        // Returns a boolean or NaN:
+        //    true  : if d is between start and end (inclusive)
+        //    false : if d is before start or after end
+        //    NaN   : if one or more of the dates is illegal.
+        // NOTE: The code inside isFinite does an assignment (=).
+       return (
+            isFinite(d=this.convert(d).valueOf()) &&
+            isFinite(start=this.convert(start).valueOf()) &&
+            isFinite(end=this.convert(end).valueOf()) ?
+            start <= d && d <= end :
+            NaN
+        );
+    }
+}
+
+    function drawTable(sheet, date) {
       let t = document.getElementById('sheet');
       t.innerHTML = '';
+      if(date == null) {
+        date = new Date();
+      }
+      var dd = String(date.getDate());
+      var mm = String(date.getMonth() + 1); //January is 0, so need to add 1!
+      var yyyy = date.getFullYear();
+      date = mm + '/' + dd + '/' + yyyy;
 
-      sheet
-        .filter(row => row.session_title != 'Title of Session' && !!row.session_title)
-        /*.sort((a, b) => {
-          if (a.business_name.toLowerCase() < b.business_name.toLowerCase()) {
-            return -1;
-          }
-          if (a.business_name.toLowerCase() > b.business_name.toLowerCase()) {
-            return 1;
-          }
-          return 0;
-        })*/
-        .map((row, i) => {
+      var sheet_date_selected = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title && row.session_date == date);
+      sheet_date_selected
+      .sort((a, b) => {
+        var a_date = new Date(yyyy, mm, dd, getHour(a.session_time), getMinute(a.session_time));
+        var b_date = new Date(yyyy, mm, dd, getHour(b.session_time), getMinute(b.session_time));
+
+        console.log('a_date: ' + a_date);
+        console.log('b_date: ' + b_date);
+
+        return dates.compare(a_date, b_date);
+      })
+      .map((row, i) => {
           let outer = document.createElement('div');
           outer.className = `place_pill`;
           /*var instructor_name;
@@ -69,6 +152,15 @@
             div.innerHTML = "row: " + i + ", column:  " + k + ", value: " + row[k];
 
           });
+          var instructor_string;
+          if(row['venmo_username'] != null) {
+            instructor_string = `${row['session_instructor']} | venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a>`;
+          }
+          else {
+            instructor_string = `${row['session_instructor']}`;
+          }
+
+
           outer.innerHTML = `\
           <div class="top_section">\
             <div class="time">\
@@ -79,7 +171,7 @@
               <div class="spacing class_type">${row['session_type']}</div>\
               <div class="spacing class_name">${row['session_title']}</div>\
               <div class="spacing class_provider">${row['session_business']}</div>\
-              <div class="spacing class_instructor">${row['session_instructor']} | venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a></div>\
+              <div class="spacing class_instructor">${instructor_string}</div>\
             </div>\
           </div>\
           <div class="bottom_section">\
@@ -92,14 +184,185 @@
           </div>`;
           t.appendChild(outer);
         });
-    };
+        if(sheet_date_selected.length == 0) {
+          t.innerHTML = '<div style="margin-top:10px;">No classes found for this date.</div>';
+        }
+    }
 
     const onBodyLoad = () => {
       $.ajax(JSON_URL).done(function(result) {
         SHEET = parseSheetResult(result);
-        drawTable(SHEET);
+        //drawTable(SHEET);
+        var today = new Date();
+        month = today.getMonth();
+        day = today.getDate();
+        year = today.getFullYear();
+        changeDay(day);
       });
     };
+
+var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var startYear = 2000;
+var endYear = 2020;
+var month = 0;
+var year = 0;
+var CURRENTLY_SELECTED_DAY = 0;
+
+function loadCalendarMonths() {
+    for (var i = 0; i < months.length; i++) {
+        var doc = document.createElement("div");
+        doc.innerHTML = months[i];
+        doc.classList.add("dropdown-item");
+
+        doc.onclick = (function () {
+            var selectedMonth = i;
+            return function () {
+                month = selectedMonth;
+                document.getElementById("curMonth").innerHTML = months[month];
+                loadCalendarDays();
+                return month;
+            }
+        })();
+
+        //document.getElementById("months").appendChild(doc);
+    }
+    displayCurrentMonthAndYear();
+
+}
+
+function displayCurrentMonthAndYear() {
+  document.getElementById("selected_month").innerHTML = months[month] + " " + year;
+}
+
+function switchToPreviousMonth() {
+  if(month > 0) {
+    month = month - 1;
+  }
+  else {
+    month = 11;
+    year = year-1;
+  }
+  displayCurrentMonthAndYear();
+  loadCalendarDays();
+  changeDay(1);
+}
+
+function switchToNextMonth() {
+  if(month < 11) {
+    month = month + 1;
+  }
+  else {
+    month = 0;
+    year = year+1;
+  }
+  displayCurrentMonthAndYear();
+  loadCalendarDays();
+  changeDay(1);
+}
+
+function loadCalendarYears() {
+    //document.getElementById("years").innerHTML = "";
+
+    for (var i = startYear; i <= endYear; i++) {
+        var doc = document.createElement("div");
+        doc.innerHTML = i;
+        doc.classList.add("dropdown-item");
+
+        doc.onclick = (function () {
+            var selectedYear = i;
+            return function () {
+                year = selectedYear;
+                document.getElementById("curYear").innerHTML = year;
+                loadCalendarDays();
+                return year;
+            }
+        })();
+
+        //document.getElementById("years").appendChild(doc);
+    }
+}
+
+function loadCalendarDays() {
+    document.getElementById("calendarDays").innerHTML = "";
+
+    var tmpDate = new Date(year, month, 0);
+    var num = daysInMonth(month, year);
+    var dayofweek = tmpDate.getDay();       // find where to start calendar day of week
+
+    for (var i = 0; i <= dayofweek; i++) {
+        var d = document.createElement("div");
+        d.classList.add("day");
+        d.classList.add("blank");
+        document.getElementById("calendarDays").appendChild(d);
+    }
+
+    for (var i = 0; i < num; i++) {
+        var tmp = i + 1;
+        var d = document.createElement("div");
+        d.id = "calendarday_" + i;
+        d.className = "day";
+        d.innerHTML = tmp;
+
+
+        d.onclick = (function () {
+            var selectedDay = i;
+            return function () {
+                day = selectedDay + 1;
+                //document.getElementById("curMonth").innerHTML = months[month];
+                changeDay(day);
+                return day;
+            }
+        })();
+
+        document.getElementById("calendarDays").appendChild(d);
+    }
+
+    var clear = document.createElement("div");
+    clear.className = "clear";
+    document.getElementById("calendarDays").appendChild(clear);
+}
+
+function changeDay(day) {
+  var date = new Date(year, month, day);
+  document.getElementById("selected_day").innerHTML = getDayOfWeek(date) + " " + getMonth(date) + " " + day + ", " + year;
+  drawTable(SHEET, date);
+  var currently_selected_day_div = document.getElementById("calendarday_" + CURRENTLY_SELECTED_DAY);
+  if(currently_selected_day_div != null) {
+    currently_selected_day_div.className = "day";
+  }
+  document.getElementById("calendarday_" + (day - 1)).className = "day_selected";
+  CURRENTLY_SELECTED_DAY = day - 1;
+
+}
+
+function getDayOfWeek(date) {
+  const dayOfWeek = new Date(date).getDay();
+  return isNaN(dayOfWeek) ? null :
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek];
+}
+
+function getMonth(date) {
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+  return monthNames[date.getMonth()];
+}
+
+function daysInMonth(month, year)
+{
+    var d = new Date(year, month+1, 0);
+    return d.getDate();
+}
+
+window.addEventListener('load', function () {
+    var date = new Date();
+    month = date.getMonth();
+    year = date.getFullYear();
+
+    loadCalendarMonths();
+    loadCalendarYears();
+    loadCalendarDays();
+});
 
   </script>
 
@@ -131,7 +394,167 @@
     body {
       font-family: 'Lato', sans-serif;
       background-color: #dae5f2;
-    }
+      box-sizing: border-box;
+}
+
+
+    /* BEGIN CALENDAR CSS */
+.calendar
+{
+
+    padding: 20px;
+    box-shadow: 0px 5px 10px rgba(0,0,0,0.4);
+    background-color:
+    #ffffff;
+
+    border-radius:7px;
+    padding:20px;
+    margin-bottom:20px;
+}
+
+.calendar .dropdown
+{
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    color: #123456;
+    text-align: center;
+    font-size: 14pt;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 30px;
+    padding-right: 30px;
+    width: 160px;
+    left: 0px;
+    z-index: 2000;
+}
+
+.calendar .dropdown .dropdown-item
+{
+    cursor:pointer;
+    opacity: .7;
+    transition: .5s opacity;
+}
+
+.calendar .dropdown .dropdown-item:hover
+{
+    opacity: 1;
+}
+
+.calendar .years
+{
+    display:none;
+}
+
+.calendar .title
+{
+    text-align:center;
+    font-size:20pt;
+}
+
+.calendar .calendar-btn
+{
+    float: left;
+    background-color: #123456;
+    color: white;
+    text-align: center;
+    font-size: 14pt;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    position: relative;
+    width: 20%;
+    cursor: pointer;
+    transition: .5s background-color;
+}
+
+.calendar .calendar-btn:hover{
+    background-color:#1f71a1;
+}
+
+.calendar .year-btn
+{
+    float:right;
+}
+
+.day_selected {
+  background-color:#123456;
+  cursor:pointer;
+  float:left;
+  width: 12%;
+  margin: 1%;
+  padding: 1%;
+  font-size:13pt;
+  text-align:center;
+  border-radius: 10px;
+  color:white;
+}
+
+.calendar .calendar-dates .days .day
+{
+    cursor:pointer;
+    float:left;
+    width: 12%;
+    margin: 1%;
+    padding: 1%;
+    font-size:13pt;
+    text-align:center;
+    border-radius: 10px;
+    /*border: solid 1px #ddd;*/
+    /*background-color:#fff*/
+}
+
+.calendar .calendar-dates .days .day.blank
+{
+    background-color: white;
+    border:none;
+}
+
+.calendar .calendar-dates .days .day.selected
+{
+    background-color: #123456;
+    color: white;
+    cursor:pointer;
+    opacity: .5;
+    transition: .5s opacity;
+}
+
+.calendar .calendar-dates .days .day.selected:hover
+{
+    opacity: 1;
+}
+
+.calendar .calendar-dates .days .day.label
+{
+    height: 40px;
+    background-color: white;
+    color: black;
+    border:none;
+    font-weight:bold;
+}
+
+.days {
+  //background-color:#fff;
+}
+
+.clear{
+    clear:both;
+}
+
+/*@media only screen and (max-width: 960px) {
+    .calendar{
+        width: 100%;
+        margin: 0px;
+        margin: 0px;
+        box-sizing: border-box;
+        position: relative;
+        left: 0px;
+    }*/
+}
+    /* END CALENDAR CSS */
+
+
+
+
     .nav {
       text-align: center;
       padding: 4px;
@@ -158,6 +581,7 @@
       background: #fff;
       border-radius: 7px;
       margin-top: 20px;
+      box-shadow: 0px 5px 10px rgba(0,0,0,0.4);
       /* box-shadow: 1px 1px 1px #eee; */
     }
 
@@ -332,7 +756,7 @@
     white-space: nowrap;
     padding:22px;
 }
-.day {
+.selected_day {
   font-size:24px;
 }
 </style>
@@ -350,7 +774,43 @@
 
 
   <div class="fl w-100 pt10 pa2" style="margin-top:15px">
-    <div class="day">Saturday, March 28</div>
+
+<!-- START CALENDAR CODE -->
+
+<div class="calendar" id="calendar" style="">
+
+
+    <div style="background:#FAFAFAFA; padding:15px; color:black; vertical-align:middle; display:table; width:100%">
+
+        <div style="display:table-cell; text-align:left; cursor:pointer; width:35px;" onClick="switchToPreviousMonth();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
+        <div id="selected_month" style="display:table-cell; vertical-align:middle; text-align:center;"></div>
+        <div style="display:table-cell; text-align:right; cursor:pointer; width:35px;" onClick="switchToNextMonth();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
+
+    </div>
+
+    <div class="clear"></div>
+
+    <div class="calendar-dates">
+        <div class="days">
+            <div class="day label">S</div>
+            <div class="day label">M</div>
+            <div class="day label">T</div>
+            <div class="day label">W</div>
+            <div class="day label">T</div>
+            <div class="day label">F</div>
+            <div class="day label">S</div>
+
+            <div class="clear"></div>
+        </div>
+
+        <div id="calendarDays" class="days">
+        </div>
+    </div>
+</div>
+
+<!-- END Calendar code -->
+
+    <div class="selected_day" id="selected_day"></div>
 
     <div id="sheet" style="margin-bottom:15px;"></div>
 
