@@ -56,7 +56,7 @@
       var minute_and_am_or_pm = time_array[1];
 
       var last_index = minute_and_am_or_pm.length ;
-      var minute = minute_and_am_or_pm.substring(0, last_index-2);
+      var minute = minute_and_am_or_pm.substring(0, last_index-3);
       return minute;
     }
 
@@ -160,8 +160,25 @@
           var date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
           duration = parseInt(row.session_duration, 10);
           var endDate = new Date(date_object.getTime() + duration*60000);
-          endTime = endDate.toLocaleString();
-          endTime = endTime.replace(',', '');
+          endTime_array1 = endDate.toLocaleString().split(" ");
+          endTime_array = endTime_array1[1].split(":");
+          end_hour = pad(endTime_array[0],2);
+
+          if(endTime_array1[2] == 'PM' && end_hour != 12) {
+            end_hour = parseInt(end_hour,10) + 12;
+          }
+
+          end_minute = pad(endTime_array[1],2);
+          endTime = end_hour + end_minute + "00";
+          //endTime = endTime.replace(',', '');
+          gcal_date = yyyy + pad(mm,2) + pad(dd,2);
+          //console.log('gcal_date: ' + gcal_date);
+          gcal_start_time = pad(getHour(row.session_time),2) + getMinute(row.session_time) + "00";
+          //console.log('gcal_start_time: ' + gcal_start_time)
+
+          gcal_date_start_time = gcal_date + "T" + gcal_start_time;
+          gcal_date_end_time = gcal_date + "T" + endTime;
+
           outer.innerHTML = `\
           <div class="top_section">\
             <div class="time">\
@@ -183,7 +200,7 @@
             </div>\
             <div class="cal_icon">\
 \
-                <a target="_blank" href="http://www.google.com/calendar/event?action=TEMPLATE&dates=20180821%2F20180822&text=Litmus%20Live%20London&location=etc.venues%20155%20Bishopsgate&details=Litmus%20Live%20helps%20you%20become%20a%20better%20email%20marketer%20with%20real-world%20advice%2C%20best%20practices%20%26%20practical%20takeaways."  class="cta gmail-show"><img src="https://static.thenounproject.com/png/48021-200.png" \>
+                <a target="_blank" href="http://www.google.com/calendar/event?action=TEMPLATE&dates=${gcal_date_start_time}/${gcal_date_end_time}&text=${row['session_title']}&details=${row['session_title']} w/ ${row['session_instructor']}. Tune in on Instagram: @${row['instagram_handle']}"  class="cta gmail-show"><img src="https://static.thenounproject.com/png/48021-200.png" \>
 \
             </div>\
           </div>`;
@@ -357,6 +374,12 @@ function daysInMonth(month, year)
 {
     var d = new Date(year, month+1, 0);
     return d.getDate();
+}
+
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
 }
 
 window.addEventListener('load', function () {
@@ -776,7 +799,7 @@ window.addEventListener('load', function () {
 <body onload="onBodyLoad();">
   <div class="mw7 ph4 center">
     <div style="border-bottom:1px #6696CC solid; padding:10px; padding-bottom:26px;">
-      <div style="font-size:30px; margin-top:40px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:200px;" /></div>
+      <div style="font-size:30px; margin-top:20px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:140px;" /></div>
     </div>
 
 
