@@ -129,9 +129,6 @@
         var a_date = new Date(yyyy, mm, dd, getHour(a.session_time), getMinute(a.session_time));
         var b_date = new Date(yyyy, mm, dd, getHour(b.session_time), getMinute(b.session_time));
 
-        console.log('a_date: ' + a_date);
-        console.log('b_date: ' + b_date);
-
         return dates.compare(a_date, b_date);
       })
       .map((row, i) => {
@@ -160,7 +157,11 @@
             instructor_string = `${row['session_instructor']}`;
           }
 
-
+          var date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
+          duration = parseInt(row.session_duration, 10);
+          var endDate = new Date(date_object.getTime() + duration*60000);
+          endTime = endDate.toLocaleString();
+          endTime = endTime.replace(',', '');
           outer.innerHTML = `\
           <div class="top_section">\
             <div class="time">\
@@ -180,7 +181,19 @@
                 <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@${row['instagram_handle']}\
               </a>\
             </div>\
-            <div class="cal_icon"><a target="_blank" href=""><img src="https://static.thenounproject.com/png/48021-200.png" /></a></div>\
+            <div class="cal_icon">\
+\
+                <div title="Add to Calendar" class="addeventatc" data-styling="none">\
+                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px;" />\
+                  <span class="start">${date} ${row['session_time']}</span>\
+                  <span class="end">${endTime}</span>\
+                  <span class="timezone">America/New_York</span>\
+                  <span class="title">${row['session_title']}</span>\
+                  <span class="description">${row['session_title']} \n ${row['session_business']} \n ${row['session_instructor']}</span>\
+                  <span class="location">Location of the event</span>\
+              </div>\
+\
+            </div>\
           </div>`;
           t.appendChild(outer);
         });
@@ -364,7 +377,14 @@ window.addEventListener('load', function () {
     loadCalendarDays();
 });
 
+
+
   </script>
+  <!-- AddEvent theme css -->
+  <link rel="stylesheet" href="css/theme8.css" type="text/css" media="screen" />
+
+  <!-- AddEvent -->
+  <script type="text/javascript" src="https://addevent.com/libs/atc/1.6.1/atc.min.js"></script>
 
   <style type="text/css">
     .material-icons {
@@ -764,7 +784,7 @@ window.addEventListener('load', function () {
 <body onload="onBodyLoad();">
   <div class="mw7 ph4 center">
     <div style="border-bottom:1px #6696CC solid; padding:10px; padding-bottom:26px;">
-      <div style="font-size:30px; margin-top:40px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:300px;" /></div>
+      <div style="font-size:30px; margin-top:40px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:200px;" /></div>
     </div>
 
 
