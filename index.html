@@ -69,7 +69,27 @@
             div.innerHTML = "row: " + i + ", column:  " + k + ", value: " + row[k];
 
           });
-          outer.innerHTML = `<div class="time"><div>${row['session_time']}</div><div class="duration">(${row['session_duration']})</div></div><div class="class_details"><div class="spacing class_type">${row['session_type']}</div><div class="spacing class_name">${row['session_title']}</div><div class="spacing class_provider">${row['session_business']}</div><div class="spacing class_instructor">${row['session_instructor']}</div><div class="spacing class_instructor_venmo">Venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a></div></div><div class="bottom_section"><div class="instagram_pill"><a target="_blank" href="http://instagram.com/${row['instagram_handle']}"><img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@${row['instagram_handle']}</a></div><div class="cal_icon"><a target="_blank" href=""><img src="https://static.thenounproject.com/png/48021-200.png" /></a></div></div>`;
+          outer.innerHTML = `\
+          <div class="top_section">\
+            <div class="time">\
+              <div>${row['session_time']}</div>\
+              <div class="duration">(${row['session_duration']})</div>\
+            </div>\
+            <div class="class_details">\
+              <div class="spacing class_type">${row['session_type']}</div>\
+              <div class="spacing class_name">${row['session_title']}</div>\
+              <div class="spacing class_provider">${row['session_business']}</div>\
+              <div class="spacing class_instructor">${row['session_instructor']} | venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a></div>\
+            </div>\
+          </div>\
+          <div class="bottom_section">\
+            <div class="instagram_pill">\
+              <a target="_blank" href="http://instagram.com/${row['instagram_handle']}">\
+                <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@${row['instagram_handle']}\
+              </a>\
+            </div>\
+            <div class="cal_icon"><a target="_blank" href=""><img src="https://static.thenounproject.com/png/48021-200.png" /></a></div>\
+          </div>`;
           t.appendChild(outer);
         });
     };
@@ -150,6 +170,34 @@
       color: #666;
       padding-top: 2px;
       font-size: 14px;
+    }
+
+    .top_section {
+      clear:both;
+      text-align:center;
+      display:table;
+      width:100%;
+      margin-bottom:10px;
+    }
+
+    .time {
+      display: table-cell;
+      vertical-align:top;
+      width: 78px;
+      text-align:left;
+    }
+
+    .class_details {
+      display: table-cell;
+      vertical-align:top;
+      text-align:left;
+    }
+
+    .bottom_section {
+      clear:both;
+      text-align:center;
+      display:table;
+      width:100%;
     }
 
     .instagram_pill {
@@ -252,16 +300,6 @@
     width:100%;
 }
 
-.time {
-  float: left;
-  width: 78px;
-}
-
-.class_details {
-   float:left;
-   margin-bottom:10px;
-}
-
 .class_type {
   font-size:10px;
 }
@@ -290,13 +328,6 @@
   color:gray;
 }
 
-.bottom_section {
-  clear:both;
-  text-align:center;
-  display:table;
-  width:100%;
-}
-
 .button {
     white-space: nowrap;
     padding:22px;
@@ -314,7 +345,7 @@
 <body onload="onBodyLoad();">
   <div class="mw7 ph4 center">
     <div style="border-bottom:1px #6696CC solid; padding:10px; padding-bottom:26px;">
-      <div style="font-size:30px; margin-top:40px; font-weight:bold">EventsFromHome</div>
+      <div style="font-size:30px; margin-top:40px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:300px;" /></div>
     </div>
 
 
