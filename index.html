@@ -151,10 +151,15 @@
           });
           var instructor_string;
           if(row['venmo_username'] != null) {
-            instructor_string = `${row['session_instructor']} | venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a>`;
+            instructor_string = `<nobr>${row['session_instructor']} |<wbr> venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a></nobr>`;
           }
           else {
             instructor_string = `${row['session_instructor']}`;
+          }
+
+          instagram_handle_display = row['instagram_handle'];
+          if(instagram_handle_display.length >= 10 ) {
+            instagram_handle_display = instagram_handle_display.substring(0,9) + "...";
           }
 
           var date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
@@ -194,13 +199,14 @@
           <div class="bottom_section">\
             <div class="instagram_pill">\
               <a target="_blank" href="http://instagram.com/${row['instagram_handle']}">\
-                <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="24px;">@${row['instagram_handle']}\
+                <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="18px;">@${instagram_handle_display}\
               </a>\
             </div>\
             <div class="cal_icon">\
             \
                 <div title="Add to Calendar" class="addeventatc" data-styling="none">\
-                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px;" />\
+                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px; vertical-align:middle;" />\
+                  <span style="font-size:12px; vertical-align:middle; font-family:'Lato', sans-serif">Add to Cal</span>
                   <span class="start">${date} ${row['session_time']}</span>\
                   <span class="end">${endTime}</span>\
                   <span class="timezone">America/New_York</span>\
@@ -445,11 +451,8 @@ window.addEventListener('load', function () {
 {
 
     padding: 20px;
-    box-shadow: 0px 5px 10px rgba(0,0,0,0.4);
-    background-color:
-    #ffffff;
+    background-color: #ffffff;
 
-    border-radius:7px;
     padding:20px;
     margin-bottom:20px;
 }
@@ -619,11 +622,10 @@ window.addEventListener('load', function () {
 
 
     .place_pill {
-      padding: 20px;
+      padding: 12px;
+      padding-right:0px;
       background: #fff;
-      border-radius: 7px;
-      margin-top: 20px;
-      box-shadow: 0px 5px 10px rgba(0,0,0,0.4);
+      border-bottom:1px gray solid;
       /* box-shadow: 1px 1px 1px #eee; */
     }
 
@@ -631,7 +633,7 @@ window.addEventListener('load', function () {
     .top_section {
       clear:both;
       text-align:center;
-      display:table;
+      display:table-cell;
       width:100%;
       margin-bottom:5px;
     }
@@ -639,7 +641,7 @@ window.addEventListener('load', function () {
     .time {
       display: table-cell;
       vertical-align:top;
-      width: 78px;
+      width: 66px;
       text-align:left;
       font-size:14px;
     }
@@ -651,10 +653,11 @@ window.addEventListener('load', function () {
     }
 
     .bottom_section {
-      clear:both;
-      text-align:center;
-      display:table;
+
+
+      display: table-cell;
       width:100%;
+      vertical-align:top;
     }
 
     .instagram_pill {
@@ -674,6 +677,7 @@ window.addEventListener('load', function () {
       font-size:12px;
       word-wrap:break-word;
       margin-right:15px;
+      width:115px;
     }
 
     .instagram_pill img {
@@ -681,9 +685,13 @@ window.addEventListener('load', function () {
     }
 
     .cal_icon {
-      display: table-cell;
+
       vertical-align:middle;
-      width: 25px;
+      width: 115px;
+      background: #F0F0F0;
+      border-radius:10px;
+      padding:5px;
+      margin-top:5px;
     }
 
     .cal_icon a {
@@ -694,7 +702,7 @@ window.addEventListener('load', function () {
     }
 
     .cal_icon img {
-      /*width:25px;*/
+      margin-right:10px;
     }
     .gofundme_pill {
       margin: 20px 0px;
@@ -791,6 +799,8 @@ window.addEventListener('load', function () {
 }
 .selected_day {
   font-size:24px;
+  margin:14px;
+  margin-top:24px;
 }
 </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -800,13 +810,13 @@ window.addEventListener('load', function () {
 </head>
 
 <body onload="onBodyLoad();">
-  <div class="mw7 ph4 center">
+  <div class="mw7 center">
     <div style="border-bottom:1px #6696CC solid; padding:10px; padding-bottom:26px;">
       <div style="font-size:30px; margin-top:20px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:140px;" /></div>
     </div>
 
 
-  <div class="fl w-100 pt10 pa2" style="margin-top:15px">
+  <div class="fl w-100 pt10" style="margin-top:15px">
 
 <!-- START CALENDAR CODE -->
 
@@ -847,8 +857,8 @@ window.addEventListener('load', function () {
 
     <div id="sheet" style="margin-bottom:15px;"></div>
 
-
-    <!--<div class="place_pill">
+    <!--
+    <div class="place_pill">
       <div class="time">
         <div>10:00am</div>
         <div class="duration">(45 min)</div>
@@ -864,7 +874,7 @@ window.addEventListener('load', function () {
       <div class="bottom_section">
         <div class="instagram_pill">
           <a target="_blank" href="http://venmo.com/nowahelp">
-            <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@samanthagerardwoods
+            <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@test
           </a>
         </div>
 
@@ -893,7 +903,7 @@ window.addEventListener('load', function () {
       <div class="bottom_section">
         <div class="instagram_pill">
           <a target="_blank" href="http://venmo.com/nowahelp">
-            <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@samanthagerardwoods
+            <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@test
           </a>
         </div>
 
@@ -905,6 +915,7 @@ window.addEventListener('load', function () {
 
       </div>
     </div>-->
+
 
 </div>
 <script
