@@ -160,24 +160,23 @@
           var date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
           duration = parseInt(row.session_duration, 10);
           var endDate = new Date(date_object.getTime() + duration*60000);
-          endTime_array1 = endDate.toLocaleString().split(" ");
-          endTime_array = endTime_array1[1].split(":");
-          end_hour = pad(endTime_array[0],2);
+          endTime = endDate.toLocaleString();
+          endTime = endTime.replace(',', '');
 
-          if(endTime_array1[2] == 'PM' && end_hour != 12) {
-            end_hour = parseInt(end_hour,10) + 12;
-          }
 
-          end_minute = pad(endTime_array[1],2);
-          endTime = end_hour + end_minute + "00";
-          //endTime = endTime.replace(',', '');
-          gcal_date = yyyy + pad(mm,2) + pad(dd,2);
+
+          //gcal_date = yyyy + pad(mm,2) + pad(dd,2);
           //console.log('gcal_date: ' + gcal_date);
-          gcal_start_time = pad(getHour(row.session_time),2) + getMinute(row.session_time) + "00";
+          //gcal_start_time = pad(getHour(row.session_time),2) + getMinute(row.session_time) + "00";
           //console.log('gcal_start_time: ' + gcal_start_time)
 
-          gcal_date_start_time = gcal_date + "T" + gcal_start_time;
-          gcal_date_end_time = gcal_date + "T" + endTime;
+          //gcal_date_start_time = gcal_date + "T" + gcal_start_time;
+          //gcal_date_end_time = gcal_date + "T" + endTime;
+
+          var date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
+          duration = parseInt(row.session_duration, 10);
+          var endDate = new Date(date_object.getTime() + duration*60000);
+
 
           outer.innerHTML = `\
           <div class="top_section">\
@@ -199,9 +198,17 @@
               </a>\
             </div>\
             <div class="cal_icon">\
-\
-                <a target="_blank" href="http://www.google.com/calendar/event?action=TEMPLATE&dates=${gcal_date_start_time}/${gcal_date_end_time}&text=${row['session_title']}&details=${row['session_title']} w/ ${row['session_instructor']}. Tune in on Instagram: @${row['instagram_handle']}"  class="cta gmail-show"><img src="https://static.thenounproject.com/png/48021-200.png" \>
-\
+            \
+                <div title="Add to Calendar" class="addeventatc" data-styling="none">\
+                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px;" />\
+                  <span class="start">${date} ${row['session_time']}</span>\
+                  <span class="end">${endTime}</span>\
+                  <span class="timezone">America/New_York</span>\
+                  <span class="title">${row['session_title']}</span>\
+                  <span class="description">${row['session_title']} \n ${row['session_business']} \n ${row['session_instructor']}</span>\
+                  <span class="location">Location of the event</span>\
+              </div>\
+            \
             </div>\
           </div>`;
           t.appendChild(outer);
