@@ -121,9 +121,34 @@
       var dd = String(date.getDate());
       var mm = String(date.getMonth() + 1); //January is 0, so need to add 1!
       var yyyy = date.getFullYear();
+      console.log("date: " + date);
       date = mm + '/' + dd + '/' + yyyy;
 
       var sheet_date_selected = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title && row.session_date == date);
+
+
+      var now = new Date();
+      //now = new Date(yyyy, mm-1, dd, getHour("7:00 PM"), getMinute("7:00 PM")); //TODO Delete this
+      console.log("now for testing purposes: " + now);
+
+      //sheet_date_selected = sheet_date_selected.filter(row => dates.compare(now, new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time))) == -1);
+      sheet_date_selected = sheet_date_selected.filter(function(row) {
+        console.log("row: " + row);
+        var session_date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
+        session_duration = parseInt(row.session_duration, 10);
+        var session_end_date_time = new Date(session_date_object.getTime() + session_duration*60000);
+        if(dates.compare(now, session_end_date_time) == -1) {
+          return true;
+        }
+        else {
+          return false;
+        }
+      });
+
+      //var a_date = new Date(yyyy, mm, dd, getHour(a.session_time), getMinute(a.session_time));
+
+
+
       sheet_date_selected
       .sort((a, b) => {
         var a_date = new Date(yyyy, mm, dd, getHour(a.session_time), getMinute(a.session_time));
@@ -132,6 +157,11 @@
         return dates.compare(a_date, b_date);
       })
       .map((row, i) => {
+
+          console.log("map");
+          var testDate = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time))
+          console.log("testDate: " + testDate);
+
           let outer = document.createElement('div');
           outer.className = `place_pill`;
           /*var instructor_name;
@@ -183,16 +213,26 @@
           var endDate = new Date(date_object.getTime() + duration*60000);
 
 
-          outer.innerHTML = `\
+
+          var outer_html =  `\
           <div class="top_section">\
             <div class="time">\
               <div>${row['session_time']}</div>\
-              <div class="duration">(${row['session_duration']})</div>\
+              <div class="duration">(${row['session_duration']})</div>`;
+
+          if(dates.compare(now, date_object) >= 0) //if the start time has already passed 
+          {
+              outer_html = outer_html + `<div class="live"><img src="assets/live.png" style="width:50px;"></div>`;
+          }
+          outer_html = outer_html + `\
             </div>\
             <div class="class_details">\
               <div class="spacing class_type">${row['session_type']}</div>\
-              <div class="spacing class_name">${row['session_title']}</div>\
-              <div class="spacing class_provider">${row['session_business']}</div>\
+              <div class="spacing class_name">${row['session_title']}</div>`;
+          if(row['session_business'] != null) {
+            outer_html = outer_html + `<div class="spacing class_provider">${row['session_business']}</div>`;
+          }
+          outer_html = outer_html + `\
               <div class="spacing class_instructor">${instructor_string}</div>\
             </div>\
           </div>\
@@ -217,6 +257,7 @@
             \
             </div>\
           </div>`;
+          outer.innerHTML = outer_html;
           t.appendChild(outer);
         });
         if(sheet_date_selected.length == 0) {
@@ -625,7 +666,7 @@ window.addEventListener('load', function () {
       padding: 12px;
       padding-right:0px;
       background: #fff;
-      border-bottom:1px gray solid;
+      border-bottom:1px #f0f0f0 solid;
       /* box-shadow: 1px 1px 1px #eee; */
     }
 
