@@ -121,7 +121,7 @@
       var dd = String(date.getDate());
       var mm = String(date.getMonth() + 1); //January is 0, so need to add 1!
       var yyyy = date.getFullYear();
-      console.log("date: " + date);
+
       date = mm + '/' + dd + '/' + yyyy;
 
       var sheet_date_selected = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title && row.session_date == date);
@@ -129,11 +129,9 @@
 
       var now = new Date();
       //now = new Date(yyyy, mm-1, dd, getHour("7:00 PM"), getMinute("7:00 PM")); //TODO Delete this
-      console.log("now for testing purposes: " + now);
 
       //sheet_date_selected = sheet_date_selected.filter(row => dates.compare(now, new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time))) == -1);
       sheet_date_selected = sheet_date_selected.filter(function(row) {
-        console.log("row: " + row);
         var session_date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
         session_duration = parseInt(row.session_duration, 10);
         var session_end_date_time = new Date(session_date_object.getTime() + session_duration*60000);
@@ -158,9 +156,9 @@
       })
       .map((row, i) => {
 
-          console.log("map");
+
           var testDate = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time))
-          console.log("testDate: " + testDate);
+
 
           let outer = document.createElement('div');
           outer.className = `place_pill`;
@@ -188,7 +186,7 @@
           }
 
           instagram_handle_display = row['instagram_handle'];
-          if(instagram_handle_display.length >= 10 ) {
+          if(instagram_handle_display != null && instagram_handle_display.length >= 10 ) {
             instagram_handle_display = instagram_handle_display.substring(0,9) + "...";
           }
 
@@ -220,7 +218,7 @@
               <div>${row['session_time']}</div>\
               <div class="duration">(${row['session_duration']})</div>`;
 
-          if(dates.compare(now, date_object) >= 0) //if the start time has already passed 
+          if(dates.compare(now, date_object) >= 0) //if the start time has already passed
           {
               outer_html = outer_html + `<div class="live"><img src="assets/live.png" style="width:50px;"></div>`;
           }
@@ -261,7 +259,7 @@
           t.appendChild(outer);
         });
         if(sheet_date_selected.length == 0) {
-          t.innerHTML = '<div style="margin-top:10px;">No classes found for this date.</div>';
+          t.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No classes found for this date.</div>';
         }
     }
 
@@ -273,7 +271,9 @@
         month = today.getMonth();
         day = today.getDate();
         year = today.getFullYear();
-        changeDay(day);
+        CURRENTLY_SELECTED_MONTH = month;
+        CURRENTLY_SELECTED_YEAR = year;
+        changeDay(year, month, day);
       });
     };
 
@@ -282,7 +282,9 @@ var startYear = 2000;
 var endYear = 2020;
 var month = 0;
 var year = 0;
-var CURRENTLY_SELECTED_DAY = 0;
+var CURRENTLY_SELECTED_DAY_INDEX = 0;
+var CURRENTLY_SELECTED_MONTH;
+var CURRENTLY_SELECTED_YEAR;
 
 function loadCalendarMonths() {
     for (var i = 0; i < months.length; i++) {
@@ -307,33 +309,61 @@ function loadCalendarMonths() {
 }
 
 function displayCurrentMonthAndYear() {
-  document.getElementById("selected_month").innerHTML = months[month] + " " + year;
+  //document.getElementById("selected_month").innerHTML = months[month] + " " + year; //TODO change this
 }
 
 function switchToPreviousMonth() {
-  if(month > 0) {
-    month = month - 1;
+  if(CURRENTLY_SELECTED_MONTH > 0) {
+    CURRENTLY_SELECTED_MONTH = CURRENTLY_SELECTED_MONTH - 1;
   }
   else {
-    month = 11;
-    year = year-1;
+    CURRENTLY_SELECTED_MONTH = 11;
+    CURRENTLY_SELECTED_YEAR = CURRENTLY_SELECTED_YEAR-1;
   }
-  displayCurrentMonthAndYear();
-  loadCalendarDays();
-  changeDay(1);
+
+  CURRENTLY_SELECTED_DAY_INDEX = daysInMonth(CURRENTLY_SELECTED_MONTH, CURRENTLY_SELECTED_YEAR) - 1;
+  console.log("Just switched to previous month, CURRENTLY_SELECTED_MONTH: " + CURRENTLY_SELECTED_MONTH + ", CURRENTLY_SELECTED_YEAR: " + CURRENTLY_SELECTED_YEAR + ", CURRENTLY_SELECTED_DAY_INDEX" + CURRENTLY_SELECTED_DAY_INDEX);
+
+  //displayCurrentMonthAndYear();
+  //loadCalendarDays(1);
+  //changeDay(year, month, 1);
 }
 
 function switchToNextMonth() {
-  if(month < 11) {
-    month = month + 1;
+  if(CURRENTLY_SELECTED_MONTH < 11) {
+    CURRENTLY_SELECTED_MONTH = CURRENTLY_SELECTED_MONTH + 1;
   }
   else {
-    month = 0;
-    year = year+1;
+    CURRENTLY_SELECTED_MONTH = 0;
+    CURRENTLY_SELECTED_YEAR = CURRENTLY_SELECTED_YEAR+1;
   }
-  displayCurrentMonthAndYear();
-  loadCalendarDays();
-  changeDay(1);
+  CURRENTLY_SELECTED_DAY_INDEX = 0;
+  //displayCurrentMonthAndYear();
+  //loadCalendarDays(1);
+  //changeDay(year, month, 1);
+}
+
+function switchToNextWeek() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  var sundayOfPreviousWeek = new Date();
+  date.setDate(date.getDate() - date.getDay() + 7); // switch date to be the sunday of the next week
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}
+
+function switchToPreviousWeek() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  console.log("in switchToPreviousWeek, currently selected date: " + date);
+  console.log("in switchToPreviousWeek, currently selected date.getDate(): " + date.getDate());
+  console.log("in switchToPreviousWeek, currently selected date.getDay(): " + date.getDay());
+  date.setDate(date.getDate() - (date.getDay()+1)); // switch date to be the saturday of the previous week
+  console.log("in switchToPreviousWeek, sundayOfPreviousWeek: " + date);
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
 }
 
 function loadCalendarYears() {
@@ -358,21 +388,159 @@ function loadCalendarYears() {
     }
 }
 
-function loadCalendarDays() {
+function loadCalendarDays(the_year, the_month, the_date) {
+    var date = new Date(the_year, the_month, the_date);
+
     document.getElementById("calendarDays").innerHTML = "";
+    var beginning_i = date.getDate() - date.getDay() - 1;
+    console.log("begining_i: " + beginning_i);
 
-    var tmpDate = new Date(year, month, 0);
-    var num = daysInMonth(month, year);
-    var dayofweek = tmpDate.getDay();       // find where to start calendar day of week
+    if(beginning_i < 0) {
+      var tmpDate = new Date(the_year, the_month, 0);
+      var num = daysInMonth(the_month, the_year);
+      var dayofweek = tmpDate.getDay();       // find where to start calendar day of week
+      var earlierMonth;
+      var earlierYear;
+      if(the_month > 0) {
+        earlierMonth = the_month - 1;
+        earlierYear = the_year;
+      }
+      else {
+        earlierMonth = 11;
+        earlierYear = the_year - 1;
+      }
 
-    for (var i = 0; i <= dayofweek; i++) {
+      var num_days = daysInMonth(earlierMonth, earlierYear);
+      var num_days_index = num_days - 1;
+      var lastDateEarlierMonth = new Date(earlierYear, earlierMonth, num_days);
+      var sunday_date = num_days - lastDateEarlierMonth.getDay();
+      var sunday_date_index = sunday_date - 1;
+
+      for (var i = sunday_date_index; i < num_days; i++) {
+          //start
+          var tmp = i + 1;
+          var d = document.createElement("div");
+          d.id = "calendarday_" + i;
+          d.className = "day";
+          d.innerHTML = tmp;
+
+
+          d.onclick = (function () {
+              var selectedDay = i;
+              return function () {
+                  day = selectedDay + 1;
+                  //document.getElementById("curMonth").innerHTML = months[month];
+                  changeDay(earlierYear, earlierMonth, day);
+                  return day;
+              }
+          })();
+
+          document.getElementById("calendarDays").appendChild(d);
+          //END
+      }
+
+      for(var i = 0; i < beginning_i + 7; i++) {
+        var tmp = i + 1;
         var d = document.createElement("div");
-        d.classList.add("day");
-        d.classList.add("blank");
-        document.getElementById("calendarDays").appendChild(d);
-    }
+        d.id = "calendarday_" + i;
+        d.className = "day";
+        d.innerHTML = tmp;
 
-    for (var i = 0; i < num; i++) {
+
+        d.onclick = (function () {
+            var selectedDay = i;
+            return function () {
+                day = selectedDay + 1;
+                //document.getElementById("curMonth").innerHTML = months[month];
+                changeDay(the_year, the_month, day);
+                return day;
+            }
+        })();
+
+        document.getElementById("calendarDays").appendChild(d);
+      }
+    }
+    else {
+      var end_date = daysInMonth(the_month, the_year);
+      var showNextMonthDays;
+      if(beginning_i+7 <= end_date) {
+        end_date = beginning_i+7;
+        showNextMonthDays = false;
+      }
+      else {
+        showNextMonthDays = true;
+      }
+      for (var i = beginning_i; i < end_date; i++) {
+        var tmp = i + 1;
+        var d = document.createElement("div");
+        d.id = "calendarday_" + i;
+        d.className = "day";
+        d.innerHTML = tmp;
+
+
+        d.onclick = (function () {
+            var selectedDay = i;
+            return function () {
+                day = selectedDay + 1;
+                //document.getElementById("curMonth").innerHTML = months[month];
+                changeDay(the_year, the_month, day);
+                return day;
+            }
+        })();
+
+        document.getElementById("calendarDays").appendChild(d);
+      }
+
+      //start
+
+      if(showNextMonthDays)
+      {
+        console.log("showNextMonthDays: " + showNextMonthDays);
+        var nextMonth;
+        var nextYear;
+        console.log("month: " + the_month);
+        console.log("year: " + the_year);
+        if(the_month < 11) {
+          nextMonth = the_month + 1;
+          nextYear = the_year;
+        }
+        else {
+          nextMonth = 0;
+          nextYear = the_year + 1;
+        }
+        var firstDateNextMonth = new Date(nextYear, nextMonth, 1);
+        console.log("nextMonth: " + nextMonth);
+        console.log("nextYear: " + nextYear);
+
+        var endIndex = firstDateNextMonth.getDate() - firstDateNextMonth.getDay() + 6;
+        for (var i = 0; i < endIndex; i++) {
+          var tmp = i + 1;
+          var d = document.createElement("div");
+          d.id = "calendarday_" + i;
+          d.className = "day";
+          d.innerHTML = tmp;
+
+
+          d.onclick = (function () {
+              var selectedDay = i;
+              return function () {
+                  day = selectedDay + 1;
+                  //document.getElementById("curMonth").innerHTML = months[month];
+                  changeDay(nextYear, nextMonth, day);
+                  return day;
+              }
+          })();
+
+          document.getElementById("calendarDays").appendChild(d);
+        }
+      }
+
+
+      //END
+
+
+    }
+    /*for (var i = 0; i < num; i++) {
         var tmp = i + 1;
         var d = document.createElement("div");
         d.id = "calendarday_" + i;
@@ -391,23 +559,29 @@ function loadCalendarDays() {
         })();
 
         document.getElementById("calendarDays").appendChild(d);
-    }
+    }*/
 
     var clear = document.createElement("div");
     clear.className = "clear";
     document.getElementById("calendarDays").appendChild(clear);
 }
 
-function changeDay(day) {
-  var date = new Date(year, month, day);
-  document.getElementById("selected_day").innerHTML = getDayOfWeek(date) + " " + getMonth(date) + " " + day + ", " + year;
+function changeDay(the_year, the_month, the_day) {
+  var date = new Date(the_year, the_month, the_day);
+  document.getElementById("selected_day").innerHTML = getDayOfWeek(date) + " " + getMonth(date) + " " + the_day + ", " + the_year;
+  document.getElementById("selected_month").innerHTML = getMonth(date) + " " + the_day + ", " + the_year;
   drawTable(SHEET, date);
-  var currently_selected_day_div = document.getElementById("calendarday_" + CURRENTLY_SELECTED_DAY);
+  var currently_selected_day_div = document.getElementById("calendarday_" + CURRENTLY_SELECTED_DAY_INDEX);
   if(currently_selected_day_div != null) {
     currently_selected_day_div.className = "day";
   }
-  document.getElementById("calendarday_" + (day - 1)).className = "day_selected";
-  CURRENTLY_SELECTED_DAY = day - 1;
+  if(document.getElementById("calendarday_" + (the_day - 1)) != null) {
+    document.getElementById("calendarday_" + (the_day - 1)).className = "day_selected";
+  }
+  CURRENTLY_SELECTED_DAY_INDEX = the_day - 1;
+  CURRENTLY_SELECTED_MONTH = the_month;
+  CURRENTLY_SELECTED_YEAR = the_year;
+
 
 }
 
@@ -438,12 +612,13 @@ function pad(n, width, z) {
 
 window.addEventListener('load', function () {
     var date = new Date();
-    month = date.getMonth();
-    year = date.getFullYear();
+    CURRENTLY_SELECTED_MONTH = date.getMonth();
+    CURRENTLY_SELECTED_YEAR = date.getFullYear();
+    date_num = date.getDate();
 
     loadCalendarMonths();
     loadCalendarYears();
-    loadCalendarDays();
+    loadCalendarDays(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, date_num);
 });
 
 
@@ -616,6 +791,7 @@ window.addEventListener('load', function () {
     color: black;
     border:none;
     font-weight:bold;
+    font-size:12px;
 }
 
 .days {
@@ -864,11 +1040,11 @@ window.addEventListener('load', function () {
 <div class="calendar" id="calendar" style="">
 
 
-    <div style="background:#FAFAFAFA; padding:15px; color:black; vertical-align:middle; display:table; width:100%">
+    <div style="padding:15px; color:black; vertical-align:middle; display:table; width:100%">
 
-        <div style="display:table-cell; text-align:left; cursor:pointer; width:35px;" onClick="switchToPreviousMonth();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
+        <div style="display:table-cell; text-align:left; cursor:pointer; width:35px;" onClick="switchToPreviousWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
         <div id="selected_month" style="display:table-cell; vertical-align:middle; text-align:center;"></div>
-        <div style="display:table-cell; text-align:right; cursor:pointer; width:35px;" onClick="switchToNextMonth();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
+        <div style="display:table-cell; text-align:right; cursor:pointer; width:35px;" onClick="switchToNextWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
 
     </div>
 
