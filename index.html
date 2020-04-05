@@ -786,7 +786,7 @@ window.addEventListener('load', function () {
 
 .calendar .calendar-dates .days .day.label
 {
-    height: 40px;
+    height: 28px;
     background-color: white;
     color: black;
     border:none;
@@ -1039,33 +1039,38 @@ window.addEventListener('load', function () {
 
 <div class="calendar" id="calendar" style="">
 
-
-    <div style="padding:15px; color:black; vertical-align:middle; display:table; width:100%">
-
-        <div style="display:table-cell; text-align:left; cursor:pointer; width:35px;" onClick="switchToPreviousWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
+    <div style="padding:8px; color:black; vertical-align:middle; display:table; width:100%">
         <div id="selected_month" style="display:table-cell; vertical-align:middle; text-align:center;"></div>
-        <div style="display:table-cell; text-align:right; cursor:pointer; width:35px;" onClick="switchToNextWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
-
     </div>
+    <div style="display:table; width:100%">
+      <div style="display:table-cell; text-align:left; cursor:pointer; width:35px; vertical-align:middle;" onClick="switchToPreviousWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
+      <div style="display:table-cell">
+        <div class="calendar-dates">
+            <div class="days">
+                <div class="day label">S</div>
+                <div class="day label">M</div>
+                <div class="day label">T</div>
+                <div class="day label">W</div>
+                <div class="day label">T</div>
+                <div class="day label">F</div>
+                <div class="day label">S</div>
+
+                <div class="clear"></div>
+            </div>
+
+            <div id="calendarDays" class="days">
+            </div>
+        </div>
+      </div>
+      <div style="display:table-cell; text-align:right; cursor:pointer; width:35px; vertical-align:middle;" onClick="switchToNextWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
+    </div>
+
+
+
 
     <div class="clear"></div>
 
-    <div class="calendar-dates">
-        <div class="days">
-            <div class="day label">S</div>
-            <div class="day label">M</div>
-            <div class="day label">T</div>
-            <div class="day label">W</div>
-            <div class="day label">T</div>
-            <div class="day label">F</div>
-            <div class="day label">S</div>
 
-            <div class="clear"></div>
-        </div>
-
-        <div id="calendarDays" class="days">
-        </div>
-    </div>
 </div>
 
 <!-- END Calendar code -->
