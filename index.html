@@ -275,7 +275,6 @@
         CURRENTLY_SELECTED_YEAR = year;
         changeDay(year, month, day);
         detectBrowser();
-        alert("IS_USER_ON_CHROME_AND_IOS: " + IS_USER_ON_CHROME_AND_IOS);
       });
     };
 
@@ -284,6 +283,10 @@
       if (navigator.userAgent.indexOf("Chrome") != -1 && iOS) {
         IS_USER_ON_CHROME_AND_IOS = true;
       }
+      else {
+        IS_USER_ON_CHROME_AND_IOS = false;
+      }
+      alert('IS_USER_ON_CHROME_AND_IOS take 2: ' + IS_USER_ON_CHROME_AND_IOS);
     }
 
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -294,7 +297,7 @@ var year = 0;
 var CURRENTLY_SELECTED_DAY_INDEX = 0;
 var CURRENTLY_SELECTED_MONTH;
 var CURRENTLY_SELECTED_YEAR;
-var IS_USER_ON_CHROME_AND_IOS = false;
+var IS_USER_ON_CHROME_AND_IOS;
 
 function loadCalendarMonths() {
     for (var i = 0; i < months.length; i++) {
