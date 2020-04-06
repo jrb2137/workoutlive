@@ -274,20 +274,9 @@
         CURRENTLY_SELECTED_MONTH = month;
         CURRENTLY_SELECTED_YEAR = year;
         changeDay(year, month, day);
-        detectBrowser();
       });
     };
 
-    function detectBrowser() {
-      var iOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
-      if (navigator.userAgent.indexOf("Chrome") != -1 && iOS) {
-        IS_USER_ON_CHROME_AND_IOS = true;
-      }
-      else {
-        IS_USER_ON_CHROME_AND_IOS = false;
-      }
-      alert('IS_USER_ON_CHROME_AND_IOS take 2: ' + IS_USER_ON_CHROME_AND_IOS);
-    }
 
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 var startYear = 2000;
