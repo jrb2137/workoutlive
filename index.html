@@ -178,7 +178,7 @@
 
           });
           var instructor_string;
-          if(row['venmo_username'] != null) {
+          if(row['session_instructor'] != null && row['venmo_username'] != null) {
             instructor_string = `${row['session_instructor']}<br>Venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a>`;
           }
           else {
@@ -230,8 +230,11 @@
           if(row['session_business'] != null) {
             outer_html = outer_html + `<div class="spacing class_provider">${row['session_business']}</div>`;
           }
+
+          if(instructor_string != null && instructor_string != "undefined") {
+            outer_html = outer_html + `<div class="spacing class_instructor">${instructor_string}</div>`;
+          }
           outer_html = outer_html + `\
-              <div class="spacing class_instructor">${instructor_string}</div>\
             </div>\
           </div>\
           <div class="bottom_section">\
