@@ -114,17 +114,18 @@
     }
 }
 
-    function drawTable(sheet, date) {
+    function drawTable(sheet, date_obj) {
       let t = document.getElementById('sheet');
       t.innerHTML = '';
-      if(date == null) {
-        date = new Date();
+      if(date_obj == null) {
+        date_obj = new Date();
       }
-      var dd = String(date.getDate());
-      var mm = String(date.getMonth() + 1); //January is 0, so need to add 1!
-      var yyyy = date.getFullYear();
+      var dd = String(date_obj.getDate());
+      var mm = String(date_obj.getMonth() + 1); //January is 0, so need to add 1!
+      var yyyy = date_obj.getFullYear();
 
       date = mm + '/' + dd + '/' + yyyy;
+
 
       var sheet_date_selected = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title && row.session_date == date);
 
@@ -287,7 +288,14 @@
           t.appendChild(outer);
         });
         if(sheet_date_selected.length == 0) {
-          t.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No classes found for this date.</div>';
+          //var date_of_session = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
+          console.log("date_obj: " + date_obj + ", now: " + now);
+          if(date_obj.getDate() == now.getDate() && date_obj.getMonth() == now.getMonth() && date_obj.getFullYear() == now.getFullYear()) {
+            t.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No more classes today.</div>';
+          }
+          else {
+            t.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No classes found for this date.</div>';
+          }
         }
     }
 
