@@ -291,7 +291,7 @@
           //var date_of_session = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
           console.log("date_obj: " + date_obj + ", now: " + now);
           if(date_obj.getDate() == now.getDate() && date_obj.getMonth() == now.getMonth() && date_obj.getFullYear() == now.getFullYear()) {
-            t.innerHTML = "<div style='margin-top:10px; margin-left:14px;'>🙅🏻 No more classes for today‍. <br />💪 Check tomorrow's schedule.</div>";
+            t.innerHTML = "<div style='margin-top:10px; margin-left:14px;'>🙅🏻‍ No more classes for today.<br />💪 Check tomorrow's schedule.</div>";
           }
           else {
             t.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No classes found for this date.</div>';
