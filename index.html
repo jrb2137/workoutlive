@@ -19,7 +19,9 @@
         '6': 'venmo_username',
         '7': 'session_title',
         '8': 'session_type',
-        '12': 'session_business'
+        '12': 'session_business',
+        '15': 'youtube_link',
+        '16': 'zoom_link'
       };
       var rows = [];
       result.feed.entry.map(e => {
@@ -190,6 +192,11 @@
             instagram_handle_display = instagram_handle_display.substring(0,9) + "...";
           }
 
+          session_business_youtube_zoom_display = row['session_business'];
+          if(session_business_youtube_zoom_display != null && session_business_youtube_zoom_display.length >= 12 ) {
+            session_business_youtube_zoom_display = session_business_youtube_zoom_display.substring(0,11) + "...";
+          }
+
           var date_object = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
           duration = parseInt(row.session_duration, 10);
           var endDate = new Date(date_object.getTime() + duration*60000);
@@ -238,10 +245,28 @@
             </div>\
           </div>\
           <div class="bottom_section">\
-            <div class="instagram_pill">\
-              <a target="_blank" href="http://instagram.com/${row['instagram_handle']}">\
-                <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="18px;">@${instagram_handle_display}\
-              </a>\
+            <div class="instagram_pill">`;
+
+          if(row['instagram_handle'] != null) {
+            outer_html = outer_html + `\
+            <a target="_blank" href="http://instagram.com/${row['instagram_handle']}">\
+              <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="18px;">@${instagram_handle_display}\
+            </a>`;
+          }
+          else if(row['youtube_link'] != null) {
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['youtube_link']}">\
+              <img src="https://www.net-aware.org.uk/siteassets/images-and-icons/application-icons/app-icons-youtube.png?w=585&scale=down" width="18px;">${session_business_youtube_zoom_display}\
+            </a>`;
+          }
+          else if(row['zoom_link'] != null) {
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['zoom_link']}">\
+              <img src="https://slack-files2.s3-us-west-2.amazonaws.com/avatars/2017-09-21/245295805989_06e77af1bfb8e3c81d4d_512.png" width="18px;">${session_business_youtube_zoom_display}\
+            </a>`;
+          }
+
+          outer_html = outer_html + `\
             </div>\
             <div class="cal_icon">\
             \
