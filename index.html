@@ -179,7 +179,7 @@
           });
           var instructor_string;
           if(row['venmo_username'] != null) {
-            instructor_string = `<nobr>${row['session_instructor']} |<wbr> venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a></nobr>`;
+            instructor_string = `${row['session_instructor']}<br>Venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a>`;
           }
           else {
             instructor_string = `${row['session_instructor']}`;
@@ -274,8 +274,17 @@
         CURRENTLY_SELECTED_MONTH = month;
         CURRENTLY_SELECTED_YEAR = year;
         changeDay(year, month, day);
+        detectBrowser();
+        alert("IS_USER_ON_CHROME_AND_IOS: " + IS_USER_ON_CHROME_AND_IOS);
       });
     };
+
+    function detectBrowser() {
+      var iOS = !!navigator.platform && /iPad|iPhone|iPod/.test(navigator.platform);
+      if (navigator.userAgent.indexOf("Chrome") != -1 && iOS) {
+        IS_USER_ON_CHROME_AND_IOS = true;
+      }
+    }
 
 var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 var startYear = 2000;
@@ -285,6 +294,7 @@ var year = 0;
 var CURRENTLY_SELECTED_DAY_INDEX = 0;
 var CURRENTLY_SELECTED_MONTH;
 var CURRENTLY_SELECTED_YEAR;
+var IS_USER_ON_CHROME_AND_IOS = false;
 
 function loadCalendarMonths() {
     for (var i = 0; i < months.length; i++) {
