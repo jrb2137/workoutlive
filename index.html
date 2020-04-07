@@ -228,7 +228,7 @@
 
           if(dates.compare(now, date_object) >= 0) //if the start time has already passed
           {
-              outer_html = outer_html + `<div class="live"><img src="assets/live.png" style="width:50px;"></div>`;
+              outer_html = outer_html + `<div class="live" style="margin-top:3px;"><img src="assets/live.png" style="width:40px;"></div>`;
           }
           outer_html = outer_html + `\
             </div>\
@@ -271,7 +271,7 @@
             </div>\
             <div class="cal_icon">\
             \
-                <div title="Add to Calendar" class="addeventatc" data-styling="none">\
+                <div title="Add to Calendar" class="addeventatc" data-styling="none" style="padding:0px; background:#f0f0f0; font-weight:normal;">\
                   <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px; vertical-align:middle;" />\
                   <span style="font-size:12px; vertical-align:middle; font-family:'Lato', sans-serif">Add to Cal</span>
                   <span class="start">${date} ${row['session_time']}</span>\
@@ -381,7 +381,7 @@ function switchToNextMonth() {
   //changeDay(year, month, 1);
 }
 
-function switchToNextWeek() {
+/*function switchToNextWeek() {
   day = CURRENTLY_SELECTED_DAY_INDEX+1;
   date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
   var sundayOfPreviousWeek = new Date();
@@ -394,11 +394,25 @@ function switchToNextWeek() {
 function switchToPreviousWeek() {
   day = CURRENTLY_SELECTED_DAY_INDEX+1;
   date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
-  console.log("in switchToPreviousWeek, currently selected date: " + date);
-  console.log("in switchToPreviousWeek, currently selected date.getDate(): " + date.getDate());
-  console.log("in switchToPreviousWeek, currently selected date.getDay(): " + date.getDay());
-  date.setDate(date.getDate() - (date.getDay()+1)); // switch date to be the saturday of the previous week
-  console.log("in switchToPreviousWeek, sundayOfPreviousWeek: " + date);
+  date.setDate(date.getDate() - 1); // switch date to be the saturday of the previous week
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}*/
+
+function switchToNextDay() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  date.setDate(date.getDate() + 1); // switch date to be the sunday of the next week
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}
+
+function switchToPreviousDay() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  date.setDate(date.getDate() - 1); // switch date to be the sunday of the next week
 
   loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
   changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
@@ -1057,6 +1071,21 @@ window.addEventListener('load', function () {
   margin:14px;
   margin-top:24px;
 }
+
+.nav {
+  text-align: center;
+  padding: 4px;
+  font-size: 14px;
+}
+.nav a {
+  display: inline-block;
+  margin: 0 4px;
+}
+a,
+a:visited,
+a:active {
+  color: #457b9d;
+}
 </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet" />
@@ -1065,6 +1094,22 @@ window.addEventListener('load', function () {
 </head>
 
 <body onload="onBodyLoad();">
+  <div class="nav nav-top center mw7" style="text-align:right;">
+
+    <a
+      href="#about"
+      >About</a
+    >
+
+    <a
+      target="_blank" href="http://bit.ly/goinglivecontact">Contact</a>
+
+    <a
+      target="_blank" href="http://bit.ly/goingliveco">Submit a workout</a>
+
+
+  </div>
+
   <div class="mw7 center">
     <div style="padding:10px; padding-bottom:16px;">
       <div style="font-size:30px; margin-top:20px; font-weight:bold"><img src ="./assets/goinglivelogo.png" style="width:140px;" /></div>
@@ -1081,7 +1126,7 @@ window.addEventListener('load', function () {
         <div id="selected_month" style="display:table-cell; vertical-align:middle; text-align:center;"></div>
     </div>
     <div style="display:table; width:100%">
-      <div style="display:table-cell; text-align:left; cursor:pointer; width:35px; vertical-align:middle;" onClick="switchToPreviousWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
+      <div style="display:table-cell; text-align:left; cursor:pointer; width:35px; vertical-align:middle;" onClick="switchToPreviousDay();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/chevron-left.svg" style="width:25px;" /></div>
       <div style="display:table-cell">
         <div class="calendar-dates">
             <div class="days">
@@ -1100,7 +1145,7 @@ window.addEventListener('load', function () {
             </div>
         </div>
       </div>
-      <div style="display:table-cell; text-align:right; cursor:pointer; width:35px; vertical-align:middle;" onClick="switchToNextWeek();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
+      <div style="display:table-cell; text-align:right; cursor:pointer; width:35px; vertical-align:middle;" onClick="switchToNextDay();"><img src="https://www.iedparis8.net/static/djangocms_admin_style/fonts/src/arrow-right.svg" style="width:25px;" /></div>
     </div>
 
 
@@ -1175,6 +1220,41 @@ window.addEventListener('load', function () {
 
       </div>
     </div>-->
+
+
+        <div style="text-align:left; margin-top:30px; background:#fff; padding:14px; margin-bottom:10px;" class="fl w-100 pt10">
+          <a name="about" style="font-size:16px; color:inherit; font-size:24px;">About</a>
+          <div
+            style="font-size:12px; margin-top:12px; margin-bottom:5px; margin-right:10px; text-align: left; "
+          >
+            <div style=" margin-left:0px; font-size:16px;">
+              With fitness studios and gyms closed due to the importance of social distancing, it’s harder to get our workouts in.  Many fitness instructors have taken their classes online to live formats on Instagram, Youtube, Zoom, and other platforms, making it still possible to work out in a way that preserves some semblance of the “live class” feel.  But it can be difficult to find those classes if you don’t know who to follow. We created goingLIVE to help you find these classes so you can work out from your living room while feeling connected to others doing the same thing.  Tune in at any time to find a workout happening right now, or to add a future workout to your calendar so you don’t forget.  <br /><br/>
+
+              This time is also difficult for instructors, many of whom have suddenly lost a reliable income.  We’ve made it easy to send money to the instructors who’ve provided a payment method (e.g. Venmo) in order to encourage you to help them out. <br /><br/>
+
+              Let’s continue to move and support fitness instructors, while doing our part to flatten the curve. <br /><br/>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="nav nav-top center mw7" style="text-align:right; margin-bottom:8px;">
+
+          <a
+            href="#about"
+            >About</a
+          >
+
+          <a
+            target="_blank" href="http://bit.ly/goinglivecontact">Contact</a>
+
+          <a
+            target="_blank" href="http://bit.ly/goingliveco">Submit a workout</a>
+
+
+
+        </div>
+
 
 
 </div>
