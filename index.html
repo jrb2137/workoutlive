@@ -303,14 +303,25 @@
             description = description + ` | ${row['session_instructor']}`;
           }
           description = description + " | " + location;
-
-
           outer_html = outer_html + `\
             </div>\
-            <div class="cal_icon" style="font-size:12px; vertical-align:middle;"><img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px; vertical-align:middle; float:left;" />\<a style="padding-bottom:1px; margin-top:3px;" href="javascript:createICS('${row['session_title']}', '${description}', '${location}', '${date} ${row['session_time']}', '${endTime}');">Add to Cal</a>`;
-
-          outer_html = outer_html +  `</div>\
+            <div class="cal_icon">\
+            \
+                <div title="Add to Calendar" class="addeventatc" data-styling="none" style="padding:0px; background:#f0f0f0; font-weight:normal;">\
+                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px; vertical-align:middle;" />\
+                  <span style="font-size:12px; vertical-align:middle; font-family:'Lato', sans-serif">Add to Cal</span>
+                  <span class="start">${date} ${row['session_time']}</span>\
+                  <span class="end">${endTime}</span>\
+                  <span class="timezone">America/New_York</span>\
+                  <span class="title">${row['session_title']}</span>\
+                  <span class="description">${description}</span>\
+                  <span class="location">${location}</span>\
+              </div>\
+            \
+            </div>\
           </div>`;
+
+
           outer.innerHTML = outer_html;
           t.appendChild(outer);
         });
