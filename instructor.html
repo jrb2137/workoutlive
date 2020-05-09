@@ -12,7 +12,7 @@
       'https://docs.google.com/forms/d/e/1FAIpQLSeMcjm3_RjhNfOMBFkHYrn-R9iMijbBBil2cud4Bki2-sn2qQ/viewform';
     var SHEET = [];
     //var JSON_URL = `https://spreadsheets.google.com/feeds/cells/${SPREADSHEET_ID}/1/public/full?alt=json`;
-    var JSON_URL = 'https://goinglive.hglabs.com/api?username=nyvo';
+    var JSON_URL = 'https://goinglive.hglabs.com/api?username=hongle';
     //var JSON_URL = 'https://goinglive.co/test_json.txt';
     var INSTRUCTOR_NAME;
     var BUSINESS_NAME;
@@ -623,6 +623,12 @@
     }
 
     const onBodyLoad = () => {
+      var urlParams = new URLSearchParams(window.location.search);
+      var username = urlParams.get("username");
+      if(username != null) {
+        JSON_URL = 'https://goinglive.hglabs.com/api?username=' + username;
+      }
+
       $.ajax(JSON_URL).done(function(result) {
         SHEET = parseSheetResult(result);
         var today = new Date();
