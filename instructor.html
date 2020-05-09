@@ -147,6 +147,29 @@
       document.getElementById("instructor_photo").src = result.photo_url;
       document.getElementById("profile_description").innerHTML = result.description;
 
+      if(result.payment_url != null && result.payment_url != "") {
+        var payment_url = result.payment_url;
+        if(!payment_url.includes("http")) {
+          payment_url = "http://" + payment_url;
+        }
+        document.getElementById("payment_link").href = payment_url;
+        if(payment_url.includes("venmo")) {
+          document.getElementById("payment_link").innerHTML = "Venmo";
+        }
+        else if(payment_url.includes("paypal")) {
+          document.getElementById("payment_link").innerHTML = "PayPal";
+        }
+      }
+
+      if(result.personal_url != null && result.personal_url != "") {
+        var personal_url = result.personal_url;
+        if(!personal_url.includes("http")) {
+          personal_url = "http://" + personal_url;
+        }
+        document.getElementById("website_link").href = personal_url;
+      }
+
+
       BUSINESS_NAME = result.businessname;
 
       for(rowNum = 0; rowNum < result.schedule.length; rowNum++) {
@@ -1337,7 +1360,7 @@ window.addEventListener('load', function () {
       vertical-align:top;
       width: 66px;
       text-align:left;
-      font-size:14px;
+      font-size:12px;
     }
 
     .class_details {
@@ -1482,7 +1505,7 @@ window.addEventListener('load', function () {
 }
 
 .class_name {
-  font-size:14px;
+  font-size:12px;
   font-weight:bold;
   text-transform:uppercase;
 }
@@ -1564,10 +1587,10 @@ a:active {
   <div id="profile_description" style="font-size:14px; text-align:left; margin-top:10px;"></div>
   <div style=" margin-top:10px; text-align:center; width:100%">
     <div style="display:inline-block;  width:110px; font-size:12px; background-color:#123456; padding:8px; border-radius:5px; margin-top:10px;">
-        <a href="" style="color:#ffffff; text-decoration:none;">Venmo</a>
+        <a id="payment_link" href="" style="color:#ffffff; text-decoration:none;">Donate</a>
     </div>
     <div style="display:inline-block; font-size:12px; width: 110px; background-color:#123456; padding:8px; border-radius:5px; margin-top:10px;">
-        <a href="" style="color:#ffffff; text-decoration:none;">Website</a>
+        <a id="website_link" href="" style="color:#ffffff; text-decoration:none;">Website</a>
     </div>
     <div style="clear:both;"></div>
   </div>
