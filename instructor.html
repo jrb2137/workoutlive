@@ -1,0 +1,1649 @@
+<html>
+<head>
+  <!-- include source files here... -->
+
+
+
+  <script>
+    /* Warning: all the code on this page is very sloppy! caveat emptor */
+    /* configuration */
+    var SPREADSHEET_ID = '1efPLPppoqbyTODRps6By89Msy-m2aDJ1fdrggsBLGIk';
+    var REGISTER_FORM_URL =
+      'https://docs.google.com/forms/d/e/1FAIpQLSeMcjm3_RjhNfOMBFkHYrn-R9iMijbBBil2cud4Bki2-sn2qQ/viewform';
+    var SHEET = [];
+    //var JSON_URL = `https://spreadsheets.google.com/feeds/cells/${SPREADSHEET_ID}/1/public/full?alt=json`;
+    var JSON_URL = 'https://goinglive.hglabs.com/api?username=nyvo';
+    //var JSON_URL = 'https://goinglive.co/test_json.txt';
+    var INSTRUCTOR_NAME;
+    var BUSINESS_NAME;
+
+    var toType = function(obj) {
+      return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase();
+    }
+
+    var getDisplayDateFromDate = function (date_obj) {
+      var date = date_obj.getDate();
+      var day = date_obj.getDay();
+
+      let dayMap = {
+        '0': 'SUN',
+        '1': 'MON',
+        '2': 'TUE',
+        '3': 'WED',
+        '4': 'THU',
+        '5': 'FRI',
+        '6': 'SAT',
+      };
+
+      return dayMap[day] + " " + date;
+
+    }
+
+    /*var convertDateTimeStringToDateString = function(start_datetime) {
+      start_datetime = "2020-05-12T00:30:00-02:00";
+      var date_year_first = start_datetime.split("T")[0];
+      var date_array = date_year_first.split("-");
+      var year = date_array[0];
+      var month = date_array[1];
+      var date = date_array[2];
+      return month + "/" + date + "/" + year;
+    }*/
+
+    var convertDateTimeStringToDateAndTimeString = function(start_datetime) {
+
+      //DATE
+      var date_year_first = start_datetime.split("T")[0];
+      var date_array = date_year_first.split("-");
+      var year = parseInt(date_array[0], 10);
+      var month = parseInt(date_array[1], 10);
+      var date = parseInt(date_array[2], 10);
+
+
+      //TIME
+      var time_with_timezone = start_datetime.split("T")[1];
+
+      var time_and_timezone_array;
+      var time_zone_plus_or_minus; //east or west of UTC
+      if(time_with_timezone.includes("-")) {
+        time_and_timezone_array = time_with_timezone.split("-");
+        time_zone_plus_or_minus = -1;
+      }
+      else if (time_with_timezone.includes("+")) {
+        time_and_timezone_array = time_with_timezone.split("+");
+        time_zone_plus_or_minus = 1;
+      }
+
+      var time_with_second = time_and_timezone_array[0];
+      var time_array = time_with_second.split(":");
+      var hour = time_array[0];
+      var minute = time_array[1];
+      var second = time_array[2];
+
+
+      //Take into account (a) timezone of class and (b)timezone of user
+      var time_zone = time_and_timezone_array[1];
+      var time_zone_hour = parseInt(time_zone.split(":")[0], 10);
+      var d = new Date();
+      var n = d.getTimezoneOffset()/60;
+      var numberOfHoursToAdd = -1*time_zone_plus_or_minus*time_zone_hour - n;
+      var hourInUsersTimeZone = parseInt(hour, 10) + numberOfHoursToAdd;
+
+      if(hourInUsersTimeZone < 0) {
+        hourInUsersTimeZone = hourInUsersTimeZone + 24;
+        dateObj = new Date(year, month, date);
+        dateObj.setDate(dateObj.getDate() - 1);
+        year = dateObj.getFullYear();
+        month = dateObj.getMonth();
+        date = dateObj.getDate();
+      }
+
+
+
+      var am_or_pm = 'AM';
+      if(hourInUsersTimeZone == 12) {
+        am_or_pm = 'PM';
+      }
+      else if(hourInUsersTimeZone > 12) {
+        hourInUsersTimeZone = hourInUsersTimeZone-12;
+        am_or_pm = 'PM';
+      }
+      if(hourInUsersTimeZone == 0) {
+        hourInUsersTimeZone = 12;
+      }
+
+      var time_string = hourInUsersTimeZone + ":" + minute + " " + am_or_pm;
+
+
+      var date_string = month + "/" + date + "/" + year;
+
+      return [date_string, time_string];
+    }
+
+
+    const parseSheetResult = result => {
+      let colMap = {
+        '2': 'session_date',
+        '3': 'session_time',
+        //'4': 'session_duration',
+        '5': 'instagram_handle',
+        '6': 'venmo_username',
+        //'7': 'session_title',
+        //'8': 'session_type',
+        '12': 'session_business',
+        '15': 'youtube_link',
+        '16': 'zoom_link'
+      };
+      var rows = [];
+
+      console.log("result beginning: " + result.substring(0,5));
+      if(result.substring(0,5) == "<pre>") {
+        result = result.substring(5, result.length);
+      }
+
+      result = JSON.parse(result);
+
+      INSTRUCTOR_NAME = result.firstname + " " + result.lastname;
+      document.getElementById("instructor_name").innerHTML = INSTRUCTOR_NAME;
+      document.getElementById("instructor_photo").src = result.photo_url;
+      document.getElementById("profile_description").innerHTML = result.description;
+
+      BUSINESS_NAME = result.businessname;
+
+      for(rowNum = 0; rowNum < result.schedule.length; rowNum++) {
+        rows.push({});
+        rows[rowNum]['session_title'] = result.schedule[rowNum].title;
+        rows[rowNum]['session_type'] = result.schedule[rowNum].type;
+        rows[rowNum]['platform'] = result.schedule[rowNum].platform;
+        rows[rowNum]['start_datetime'] = result.schedule[rowNum].start_datetime;
+        rows[rowNum]['start_datetime_pretty'] = result.schedule[rowNum].start_datetime_pretty;
+        rows[rowNum]['session_duration'] = result.schedule[rowNum].duration;
+        rows[rowNum]['timezone'] = result.schedule[rowNum].timezone;
+        rows[rowNum]['description'] = result.schedule[rowNum].description;
+
+        var date_and_time = convertDateTimeStringToDateAndTimeString(rows[rowNum]['start_datetime']);
+
+        rows[rowNum]['session_date'] = date_and_time[0];
+        rows[rowNum]['session_time'] = date_and_time[1];
+
+
+      }
+
+      /*result.feed.entry.map(e => {
+        let rowNum = parseInt(e['gs$cell'].row, 10);
+        while (rows.length < rowNum) {
+          rows.push({});
+        }
+        let rowIndex = rowNum - 1;
+        let colNum = e['gs$cell'].col;
+        let key = colMap[colNum];
+        let cellValue = e['gs$cell']['$t'];
+        rows[rowIndex][key] = cellValue;
+      });*/
+      return rows;
+    };
+
+    function getHour(time) {
+      var time_array = time.split(":");
+
+      var hour = time_array[0];
+      var minute_and_am_or_pm = time_array[1];
+
+      var last_index = minute_and_am_or_pm.length ;
+      var am_or_pm = minute_and_am_or_pm.substring(last_index-2, last_index);
+      hour = parseInt(hour, 10);
+      if(am_or_pm == 'PM' && hour != 12) {
+        hour = hour + 12;
+      }
+      return hour;
+    }
+
+    function getMinute(time) {
+      var time_array = time.split(":");
+      var minute_and_am_or_pm = time_array[1];
+
+      var last_index = minute_and_am_or_pm.length ;
+      var minute = minute_and_am_or_pm.substring(0, last_index-3);
+      return minute;
+    }
+
+    function getDateObjectFromString(date_string, time_string) {
+
+      date_array = date_string.split("/");
+      var month = date_array[0];
+      var day = date_array[1];
+      var year = date_array[2];
+
+      if(time_string != null) {
+        var time_array = time_string.split(":");
+        var hour = time_array[0];
+        var minute_and_am_or_pm = time_array[1];
+        var last_index = minute_and_am_or_pm.length ;
+        var am_or_pm = minute_and_am_or_pm.substring(last_index-2, last_index);
+        hour = parseInt(hour, 10);
+        if(am_or_pm == 'PM' && hour != 12) {
+          hour = hour + 12;
+        }
+        if(am_or_pm == 'AM' && hour == 12) {
+          hour = 0;
+        }
+        var minute = minute_and_am_or_pm.substring(0, last_index-3);
+      }
+      else {
+        hour = 0;
+        minute = 0;
+      }
+
+
+      var dateObject = new Date(year, month-1, day, hour, minute);
+
+      return dateObject;
+    }
+
+    /*  */
+    function compareDatesTimeInsensitive(date1, date2) {
+      var year1 = date1.getFullYear();
+      var month1 = date1.getMonth();
+      var day1 = date1.getDate();
+      var date1_obj = new Date(year1, month1, day1);
+
+      var year2 = date2.getFullYear();
+      var month2 = date2.getMonth();
+      var day2 = date2.getDate();
+      var date2_obj = new Date(year2, month2, day2);
+
+      return dates.compare(date1_obj, date2_obj);
+    }
+
+    var dates = {
+    convert:function(d) {
+        // Converts the date in d to a date-object. The input can be:
+        //   a date object: returned without modification
+        //  an array      : Interpreted as [year,month,day]. NOTE: month is 0-11.
+        //   a number     : Interpreted as number of milliseconds
+        //                  since 1 Jan 1970 (a timestamp)
+        //   a string     : Any format supported by the javascript engine, like
+        //                  "YYYY/MM/DD", "MM/DD/YYYY", "Jan 31 2009" etc.
+        //  an object     : Interpreted as an object with year, month and date
+        //                  attributes.  **NOTE** month is 0-11.
+        return (
+            d.constructor === Date ? d :
+            d.constructor === Array ? new Date(d[0],d[1],d[2]) :
+            d.constructor === Number ? new Date(d) :
+            d.constructor === String ? new Date(d) :
+            typeof d === "object" ? new Date(d.year,d.month,d.date) :
+            NaN
+        );
+    },
+    compare:function(a,b) {
+        // Compare two dates (could be of any type supported by the convert
+        // function above) and returns:
+        //  -1 : if a < b
+        //   0 : if a = b
+        //   1 : if a > b
+        // NaN : if a or b is an illegal date
+        // NOTE: The code inside isFinite does an assignment (=).
+        return (
+            isFinite(a=this.convert(a).valueOf()) &&
+            isFinite(b=this.convert(b).valueOf()) ?
+            (a>b)-(a<b) :
+            NaN
+        );
+    },
+    inRange:function(d,start,end) {
+        // Checks if date in d is between dates in start and end.
+        // Returns a boolean or NaN:
+        //    true  : if d is between start and end (inclusive)
+        //    false : if d is before start or after end
+        //    NaN   : if one or more of the dates is illegal.
+        // NOTE: The code inside isFinite does an assignment (=).
+       return (
+            isFinite(d=this.convert(d).valueOf()) &&
+            isFinite(start=this.convert(start).valueOf()) &&
+            isFinite(end=this.convert(end).valueOf()) ?
+            start <= d && d <= end :
+            NaN
+        );
+    }
+}
+
+    function drawTable(sheet, index) {
+      var date_obj;
+      if(index == null) {
+        date_obj = new Date();
+        //date_obj.setTime(date_obj.getTime() + (15*60*60*1000)); // set time to 20 huors from now for testing
+        if(ARRAY_OF_ALL_DATES_IN_SHEET[0].getFullYear() == date_obj.getFullYear() && ARRAY_OF_ALL_DATES_IN_SHEET[0].getMonth() == date_obj.getMonth() && ARRAY_OF_ALL_DATES_IN_SHEET[0].getDate() == date_obj.getDate()) { //if the first item in the array is today
+          index = 0;
+        }
+        else {
+          index = -1;
+        }
+      }
+      else {
+        date_obj = ARRAY_OF_ALL_DATES_IN_SHEET[index];
+      }
+
+      var dd = String(date_obj.getDate());
+      var mm = String(date_obj.getMonth() + 1); //January is 0, so need to add 1!
+      var yyyy = date_obj.getFullYear();
+
+      date = mm + '/' + dd + '/' + yyyy; // The date that we're showing
+
+
+      let content_container = document.getElementById('content_container');
+
+      let day_to_show = document.createElement('div');
+      day_to_show.className = "selected_day";
+      day_to_show.innerHTML = getDayOfWeek(date_obj) + ", " + getMonth(date_obj) + " " + dd;
+      day_to_show.id = "selected_day_" + mm + "/" + dd + "/" + yyyy;
+      content_container.appendChild(day_to_show);
+
+      let t = document.createElement('div');
+      t.className = "sheet";
+      t.id = "sheet_" + mm + "/" + dd + "/" + yyyy;
+      content_container.appendChild(t);
+
+
+
+      day_to_show.style.display = "block";
+      t.style.display = "block";
+
+
+      var sheet_date_selected = sheet.filter(function(row) {
+        var date_obj_of_session = getDateObjectFromString(row.session_date);
+        if(row.session_title != 'Title of Session' && !!row.session_title && compareDatesTimeInsensitive(date_obj, date_obj_of_session) == 0) {
+          return true;
+        }
+        else {
+          return false;
+        }
+      });
+
+      var now = new Date();
+      //now.setTime(now.getTime() + (15*60*60*1000)); //TODO set the time for testing
+      //now = new Date(yyyy, mm-1, dd, getHour("7:00 PM"), getMinute("7:00 PM")); //TODO Delete this
+
+      var dd = String(now.getDate());
+      var mm = String(now.getMonth() + 1); //January is 0, so need to add 1!
+      var yyyy = now.getFullYear();
+
+      now_date = mm + '/' + dd + '/' + yyyy; // Today's date
+
+      sheet_date_selected = sheet_date_selected.filter(function(row) {
+        var date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
+        if(compareDatesTimeInsensitive(date_obj, date_obj_of_session) == 0) {
+
+          if(row.session_duration == null) {
+            row.session_duration = "30 min";
+          }
+          session_duration = parseInt(row.session_duration, 10);
+
+          var session_end_date_time = new Date(date_obj_of_session.getTime() + session_duration*60000);
+          if(dates.compare(now, session_end_date_time) == -1) {
+            return true;
+          }
+          else {
+            return false;
+          }
+        }
+        else {
+          console.log("for session_date: " + row.session_date + ", returning true");
+          return true;
+        }
+      });
+
+
+
+      sheet_date_selected
+      .sort((a, b) => {
+
+        var a_date = getDateObjectFromString(a.session_date, a.session_time);
+        var b_date = getDateObjectFromString(b.session_date, b.session_time);
+
+        return dates.compare(a_date, b_date);
+      })
+      .map((row, i) => {
+          date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
+          let outer = document.createElement('div');
+          outer.className = `place_pill`;
+          /*var instructor_name;
+          var class_date;
+          var class_time;
+          var class_duration;
+          var instagram_handle;
+          var venmo_username;
+          var session_title;
+          var session_type;*/
+
+          ['session_date', 'session_time', 'session_duration', 'instagram_handle', 'venmo_username', 'session_title', 'session_type'].map(k => {
+            let div = document.createElement('div');
+            div.className = `div_content_${k}`;
+            div.innerHTML = "row: " + i + ", column:  " + k + ", value: " + row[k];
+
+          });
+
+
+          var session_date_object = new Date(yyyy, mm-1, dd);
+
+
+          if(row.session_duration == null) {
+            row.session_duration = "30 min";
+          }
+          duration = parseInt(row.session_duration, 10);
+          var endDate = new Date(date_obj_of_session.getTime() + duration*60000);
+          endTime = endDate.toLocaleString();
+          endTime = endTime.replace(',', '');
+
+
+
+          //gcal_date = yyyy + pad(mm,2) + pad(dd,2);
+          //console.log('gcal_date: ' + gcal_date);
+          //gcal_start_time = pad(getHour(row.session_time),2) + getMinute(row.session_time) + "00";
+          //console.log('gcal_start_time: ' + gcal_start_time)
+
+          //gcal_date_start_time = gcal_date + "T" + gcal_start_time;
+          //gcal_date_end_time = gcal_date + "T" + endTime;
+
+
+          var date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
+          duration = parseInt(row.session_duration, 10);
+          var endDate = new Date(date_obj_of_session.getTime() + duration*60000);
+          var display_date = getDisplayDateFromDate(date_obj_of_session);
+
+          var outer_html =  `\
+          <div class="top_section">\
+            <div class="time">\
+              <!--<div style="font-size:11px;">${display_date}</div>-->\
+              <div>${row['session_time']}</div>\
+              <div class="duration">(${row['session_duration']} min)</div>`;
+
+          if(dates.compare(now, date_obj_of_session) >= 0) //if the start time has already passed
+          {
+              outer_html = outer_html + `<div class="live" style="margin-top:3px; color:#ff7a00">LIVE</div>`;
+          }
+          outer_html = outer_html + `\
+            </div>\
+            <div class="class_details">\
+              <div class="spacing class_type">${row['session_type']}</div>\
+              <div class="spacing class_name">${row['session_title']}</div>`;
+          if(row['session_business'] != null) {
+            outer_html = outer_html + `<div class="spacing class_provider">${row['session_business']}</div>`;
+          }
+
+
+          outer_html = outer_html + `<div class="spacing class_description">${row['description']}</div>`;
+          outer_html = outer_html + `<div class="spacing class_businessname">${BUSINESS_NAME}</div>`;
+
+          outer_html = outer_html + `\
+            </div>\
+          </div>\
+          <div class="bottom_section">\
+            <div class="instagram_pill">`;
+
+          var location;
+
+          if(!row['platform'].includes("http://")) {
+            row['platform'] = "http://" + row['platform'];
+          }
+
+          if(row['platform'].includes("instagram")) {
+
+            var instagram_handle_display = "@" + row['platform'].split(".com/")[1];
+            if(instagram_handle_display != null && instagram_handle_display.length >= 10 ) {
+              instagram_handle_display = instagram_handle_display.substring(0,9) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="18px;">${instagram_handle_display}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+          else if(row['platform'].includes("youtube")) {
+
+            var display_name = BUSINESS_NAME;
+            if(display_name == null || display_name == "") {
+              display_name = INSTRUCTOR_NAME;
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="assets/youtube_logo2.png" width="18px;">${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+          else if(row['platform'].includes("zoom")) {
+            var display_name = BUSINESS_NAME;
+            if(display_name == null || display_name == "") {
+              display_name = INSTRUCTOR_NAME;
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="assets/zoom_logo2.png" width="18px;">${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+
+          else if(row['platform'].includes("facebook")) {
+            var display_name = BUSINESS_NAME;
+            if(display_name == null || display_name == "") {
+              display_name = INSTRUCTOR_NAME;
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="assets/facebook_logo.png" width="18px;">${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+
+          else {
+            var display_name = BUSINESS_NAME;
+            if(display_name == null || display_name == "") {
+              display_name = INSTRUCTOR_NAME;
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              ${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+
+          description = `${row['session_title']}`;
+          if(row['session_business'] != null && row['session_business'] != 'undefined') {
+            description = description + ` | ${row['session_business']}`;
+          }
+          description = description + ` | ${INSTRUCTOR_NAME}`;
+          description = description + " | " + location;
+          outer_html = outer_html + `\
+            </div>\
+            <div class="cal_icon">\
+            \
+                <div title="Add to Calendar" class="addeventatc" data-styling="none" style="padding:0px; background:#fafafa; font-weight:normal;">\
+                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px; vertical-align:middle;" />\
+                  <span style="font-size:12px; vertical-align:middle; font-family:'Lato', sans-serif">Add to Cal</span>
+                  <span class="start">${date} ${row['session_time']}</span>\
+                  <span class="end">${endTime}</span>\
+                  <span class="timezone">America/New_York</span>\
+                  <span class="title">${row['session_title']}</span>\
+                  <span class="description">${description}</span>\
+                  <span class="location">${location}</span>\
+              </div>\
+            \
+            </div>\
+          </div>`;
+
+
+          outer.innerHTML = outer_html;
+          t.appendChild(outer);
+        });
+        if(sheet_date_selected.length == 0) {
+          //var date_of_session = new Date(yyyy, mm-1, dd, getHour(row.session_time), getMinute(row.session_time));
+
+          if(date_obj.getDate() == now.getDate() && date_obj.getMonth() == now.getMonth() && date_obj.getFullYear() == now.getFullYear()) {
+            t.innerHTML = "<div style='margin-top:10px; margin-left:14px; font-size:14px;'>🙅🏻‍ No classes</div>";
+          }
+          else {
+            t.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No classes found for this date.</div>';
+          }
+        }
+
+
+
+        /*if(n == 0) {
+          date_obj.setDate(date_obj.getDate() + 1);
+          drawTable(sheet, date_obj, 1);
+        }
+        else if(n == 1) {
+
+        }*/
+        index = index + 1;
+
+        if(ARRAY_OF_ALL_DATES_IN_SHEET[index] != null) {
+
+          drawTable(sheet, index);
+        }
+        else {
+
+        }
+
+    }
+
+    const onBodyLoad = () => {
+      $.ajax(JSON_URL).done(function(result) {
+        SHEET = parseSheetResult(result);
+        var today = new Date();
+        //today.setTime(today.getTime() + (15*60*60*1000)); //set time to 7 hours from now for testing
+
+        getArrayOfDates(SHEET, today);
+        drawTable(SHEET);
+
+        month = today.getMonth();
+        day = today.getDate();
+        year = today.getFullYear();
+        CURRENTLY_SELECTED_MONTH = month;
+        CURRENTLY_SELECTED_YEAR = year;
+        CURRENTLY_SELECTED_DAY_INDEX = day-1;
+
+
+        //loadCalendarDays(today.getFullYear(), today.getMonth(), today.getDate());
+        //changeDay(today.getFullYear(), today.getMonth(), today.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+
+
+
+      });
+    };
+
+
+var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+var startYear = 2000;
+var endYear = 2020;
+var month = 0;
+var year = 0;
+var CURRENTLY_SELECTED_DAY_INDEX = 0;
+var CURRENTLY_SELECTED_MONTH;
+var CURRENTLY_SELECTED_YEAR;
+var IS_USER_ON_CHROME_AND_IOS;
+var ARRAY_OF_ALL_DATES_IN_SHEET = [];
+
+function getArrayOfDates(sheet, now) {
+  var array_of_all_dates_in_sheet = [];
+  sheet = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title);
+  sheet_from_today_on = sheet.filter(function(row) {
+    var date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
+    if(dates.compare(now, date_obj_of_session) == -1) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  });
+
+  sheet_from_today_on.sort((a, b) => {
+    /*var a_date = new Date(yyyy, mm, dd, getHour(a.session_time), getMinute(a.session_time));
+    var b_date = new Date(yyyy, mm, dd, getHour(b.session_time), getMinute(b.session_time));*/
+
+    var a_date = getDateObjectFromString(a.session_date, a.session_time);
+    var b_date = getDateObjectFromString(b.session_date, b.session_time);
+
+    return dates.compare(a_date, b_date);
+  })
+  .map((row, i) => {
+    date_obj_of_session = getDateObjectFromString(row.session_date);
+    array_of_all_dates_in_sheet[i] = date_obj_of_session;
+  });
+
+
+    const result = [];
+    const map = new Map();
+    for (const item of array_of_all_dates_in_sheet) {
+        if(!map.has(item.toString())){
+            map.set(item.toString(), true);    // set any value to Map
+            ARRAY_OF_ALL_DATES_IN_SHEET.push(item);
+        }
+    }
+
+
+}
+
+function loadCalendarMonths() {
+    for (var i = 0; i < months.length; i++) {
+        var doc = document.createElement("div");
+        doc.innerHTML = months[i];
+        doc.classList.add("dropdown-item");
+
+        doc.onclick = (function () {
+            var selectedMonth = i;
+            return function () {
+                month = selectedMonth;
+                document.getElementById("curMonth").innerHTML = months[month];
+                loadCalendarDays();
+                return month;
+            }
+        })();
+
+        //document.getElementById("months").appendChild(doc);
+    }
+    displayCurrentMonthAndYear();
+
+}
+
+function displayCurrentMonthAndYear() {
+  //document.getElementById("selected_month").innerHTML = months[month] + " " + year; //TODO change this
+}
+
+function switchToPreviousMonth() {
+  if(CURRENTLY_SELECTED_MONTH > 0) {
+    CURRENTLY_SELECTED_MONTH = CURRENTLY_SELECTED_MONTH - 1;
+  }
+  else {
+    CURRENTLY_SELECTED_MONTH = 11;
+    CURRENTLY_SELECTED_YEAR = CURRENTLY_SELECTED_YEAR-1;
+  }
+
+  CURRENTLY_SELECTED_DAY_INDEX = daysInMonth(CURRENTLY_SELECTED_MONTH, CURRENTLY_SELECTED_YEAR) - 1;
+
+
+  //displayCurrentMonthAndYear();
+  //loadCalendarDays(1);
+  //changeDay(year, month, 1);
+}
+
+function switchToNextMonth() {
+  if(CURRENTLY_SELECTED_MONTH < 11) {
+    CURRENTLY_SELECTED_MONTH = CURRENTLY_SELECTED_MONTH + 1;
+  }
+  else {
+    CURRENTLY_SELECTED_MONTH = 0;
+    CURRENTLY_SELECTED_YEAR = CURRENTLY_SELECTED_YEAR+1;
+  }
+  CURRENTLY_SELECTED_DAY_INDEX = 0;
+  //displayCurrentMonthAndYear();
+  //loadCalendarDays(1);
+  //changeDay(year, month, 1);
+}
+
+/*function switchToNextWeek() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  var sundayOfPreviousWeek = new Date();
+  date.setDate(date.getDate() - date.getDay() + 7); // switch date to be the sunday of the next week
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}
+
+function switchToPreviousWeek() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  date.setDate(date.getDate() - 1); // switch date to be the saturday of the previous week
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}*/
+
+function switchToNextDay() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+
+
+
+  date.setDate(date.getDate() + 1); // switch date to be the next day
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}
+
+function switchToPreviousDay() {
+  day = CURRENTLY_SELECTED_DAY_INDEX+1;
+  date = new Date(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, day);
+  date.setDate(date.getDate() - 1);
+
+  loadCalendarDays(date.getFullYear(), date.getMonth(), date.getDate());
+  changeDay(date.getFullYear(), date.getMonth(), date.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
+}
+
+function loadCalendarYears() {
+    //document.getElementById("years").innerHTML = "";
+
+    for (var i = startYear; i <= endYear; i++) {
+        var doc = document.createElement("div");
+        doc.innerHTML = i;
+        doc.classList.add("dropdown-item");
+
+        doc.onclick = (function () {
+            var selectedYear = i;
+            return function () {
+                year = selectedYear;
+                document.getElementById("curYear").innerHTML = year;
+                loadCalendarDays();
+                return year;
+            }
+        })();
+
+        //document.getElementById("years").appendChild(doc);
+    }
+}
+
+function loadCalendarDays(the_year, the_month, the_date) {
+    var date = new Date(the_year, the_month, the_date);
+
+    if(document.getElementById("calendarDays") != null) {
+      document.getElementById("calendarDays").innerHTML = "";
+    }
+    var beginning_i = date.getDate() - date.getDay() - 1;
+
+
+    if(beginning_i < 0) {
+      var tmpDate = new Date(the_year, the_month, 0);
+      var num = daysInMonth(the_month, the_year);
+      var dayofweek = tmpDate.getDay();       // find where to start calendar day of week
+      var earlierMonth;
+      var earlierYear;
+      if(the_month > 0) {
+        earlierMonth = the_month - 1;
+        earlierYear = the_year;
+      }
+      else {
+        earlierMonth = 11;
+        earlierYear = the_year - 1;
+      }
+
+      var num_days = daysInMonth(earlierMonth, earlierYear);
+      var num_days_index = num_days - 1;
+      var lastDateEarlierMonth = new Date(earlierYear, earlierMonth, num_days);
+      var sunday_date = num_days - lastDateEarlierMonth.getDay();
+      var sunday_date_index = sunday_date - 1;
+
+      for (var i = sunday_date_index; i < num_days; i++) {
+          //start
+          var tmp = i + 1;
+          var d = document.createElement("div");
+          d.id = "calendarday_" + i;
+          d.className = "day";
+          d.innerHTML = tmp;
+
+
+          d.onclick = (function () {
+              var selectedDay = i;
+              return function () {
+                  day = selectedDay + 1;
+                  //document.getElementById("curMonth").innerHTML = months[month];
+                  changeDay(earlierYear, earlierMonth, day);
+                  return day;
+              }
+          })();
+
+          document.getElementById("calendarDays").appendChild(d);
+          //END
+      }
+
+      for(var i = 0; i < beginning_i + 7; i++) {
+        var tmp = i + 1;
+        var d = document.createElement("div");
+        d.id = "calendarday_" + i;
+        d.className = "day";
+        d.innerHTML = tmp;
+
+
+        d.onclick = (function () {
+            var selectedDay = i;
+            return function () {
+                day = selectedDay + 1;
+                //document.getElementById("curMonth").innerHTML = months[month];
+                changeDay(the_year, the_month, day);
+                return day;
+            }
+        })();
+
+        document.getElementById("calendarDays").appendChild(d);
+      }
+    }
+    else {
+      var end_date = daysInMonth(the_month, the_year);
+      var showNextMonthDays;
+      if(beginning_i+7 <= end_date) {
+        end_date = beginning_i+7;
+        showNextMonthDays = false;
+      }
+      else {
+        showNextMonthDays = true;
+      }
+      for (var i = beginning_i; i < end_date; i++) {
+        var tmp = i + 1;
+        var d = document.createElement("div");
+        d.id = "calendarday_" + i;
+        d.className = "day";
+        d.innerHTML = tmp;
+
+
+        d.onclick = (function () {
+            var selectedDay = i;
+            return function () {
+                day = selectedDay + 1;
+                //document.getElementById("curMonth").innerHTML = months[month];
+                changeDay(the_year, the_month, day);
+                return day;
+            }
+        })();
+
+        document.getElementById("calendarDays").appendChild(d);
+      }
+
+      //start
+
+      if(showNextMonthDays)
+      {
+
+        var nextMonth;
+        var nextYear;
+
+        if(the_month < 11) {
+          nextMonth = the_month + 1;
+          nextYear = the_year;
+        }
+        else {
+          nextMonth = 0;
+          nextYear = the_year + 1;
+        }
+        var firstDateNextMonth = new Date(nextYear, nextMonth, 1);
+
+
+        var endIndex = firstDateNextMonth.getDate() - firstDateNextMonth.getDay() + 6;
+        for (var i = 0; i < endIndex; i++) {
+          var tmp = i + 1;
+          var d = document.createElement("div");
+          d.id = "calendarday_" + i;
+          d.className = "day";
+          d.innerHTML = tmp;
+
+
+          d.onclick = (function () {
+              var selectedDay = i;
+              return function () {
+                  day = selectedDay + 1;
+                  //document.getElementById("curMonth").innerHTML = months[month];
+                  changeDay(nextYear, nextMonth, day);
+                  return day;
+              }
+          })();
+
+          document.getElementById("calendarDays").appendChild(d);
+        }
+      }
+
+
+      //END
+
+
+    }
+    /*for (var i = 0; i < num; i++) {
+        var tmp = i + 1;
+        var d = document.createElement("div");
+        d.id = "calendarday_" + i;
+        d.className = "day";
+        d.innerHTML = tmp;
+
+
+        d.onclick = (function () {
+            var selectedDay = i;
+            return function () {
+                day = selectedDay + 1;
+                //document.getElementById("curMonth").innerHTML = months[month];
+                changeDay(day);
+                return day;
+            }
+        })();
+
+        document.getElementById("calendarDays").appendChild(d);
+    }*/
+
+    var clear = document.createElement("div");
+    clear.className = "clear";
+    document.getElementById("calendarDays").appendChild(clear);
+}
+
+
+function changeDay(the_year, the_month, the_day) {
+  var date = new Date(the_year, the_month, the_day);
+
+  month_actual_number = the_month+1;
+
+  selected_month_actual_number = CURRENTLY_SELECTED_MONTH+1;
+  if(document.getElementById("sheet_" + selected_month_actual_number + "/" + (CURRENTLY_SELECTED_DAY_INDEX+1) + "/" + CURRENTLY_SELECTED_YEAR)) {
+    document.getElementById("sheet_" + selected_month_actual_number + "/" + (CURRENTLY_SELECTED_DAY_INDEX+1) + "/" + CURRENTLY_SELECTED_YEAR).style.display = "none";
+    document.getElementById("selected_day_" + selected_month_actual_number + "/" + (CURRENTLY_SELECTED_DAY_INDEX+1) + "/" + CURRENTLY_SELECTED_YEAR).style.display = "none";
+  }
+
+
+  document.getElementById("placeholder").innerHTML = "";
+  if(document.getElementById("sheet_" + month_actual_number + "/" + (the_day) + "/" + the_year) != null) {
+    document.getElementById("sheet_" + month_actual_number + "/" + (the_day) + "/" + the_year).style.display = "block";
+    document.getElementById("selected_day_" + month_actual_number + "/" + (the_day) + "/" + the_year).style.display = "block";
+  }
+  else {
+    let day_to_show = document.createElement('div');
+    day_to_show.className = "selected_day";
+    day_to_show.innerHTML = getMonth(date) + " " + the_day + ", " + the_year;
+    document.getElementById("placeholder").appendChild(day_to_show);
+
+    let div = document.createElement('div');
+    div.innerHTML = '<div style="margin-top:10px; margin-left:14px;">No classes found for this date.</div>';
+    document.getElementById("placeholder").appendChild(div);
+
+  }
+
+
+  //document.getElementById("selected_day").innerHTML = getDayOfWeek(date) + " " + getMonth(date) + " " + the_day + ", " + the_year;
+  document.getElementById("selected_month").innerHTML = getMonth(date) + " " + the_day + ", " + the_year;
+  var currently_selected_day_div = document.getElementById("calendarday_" + CURRENTLY_SELECTED_DAY_INDEX);
+  if(currently_selected_day_div != null) {
+    currently_selected_day_div.className = "day";
+  }
+
+  if(document.getElementById("calendarday_" + (the_day - 1)) != null) {
+    document.getElementById("calendarday_" + (the_day - 1)).className = "day_selected";
+  }
+  CURRENTLY_SELECTED_DAY_INDEX = the_day - 1;
+  CURRENTLY_SELECTED_MONTH = the_month;
+  CURRENTLY_SELECTED_YEAR = the_year;
+
+
+}
+
+function getDayOfWeek(date) {
+  const dayOfWeek = new Date(date).getDay();
+  return isNaN(dayOfWeek) ? null :
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek];
+}
+
+function getMonth(date) {
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"];
+
+  return monthNames[date.getMonth()];
+}
+
+function daysInMonth(month, year)
+{
+    var d = new Date(year, month+1, 0);
+    return d.getDate();
+}
+
+function pad(n, width, z) {
+  z = z || '0';
+  n = n + '';
+  return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+}
+
+window.addEventListener('load', function () {
+    var date = new Date();
+    CURRENTLY_SELECTED_MONTH = date.getMonth();
+    CURRENTLY_SELECTED_YEAR = date.getFullYear();
+    date_num = date.getDate();
+
+    //loadCalendarMonths();
+    //loadCalendarYears();
+    //loadCalendarDays(CURRENTLY_SELECTED_YEAR, CURRENTLY_SELECTED_MONTH, date_num);
+});
+
+
+
+  </script>
+  <!-- AddEvent theme css -->
+  <link rel="stylesheet" href="css/theme8.css" type="text/css" media="screen" />
+
+  <!-- AddEvent -->
+  <script type="text/javascript" src="https://addevent.com/libs/atc/1.6.1/atc.min.js"></script>
+
+  <script>
+      window.addeventasync = function(){
+      addeventatc.settings({
+          appleical  : {show:true, text:"Apple Calendar"},
+          google     : {show:true, text:"Google"},
+          office365  : {show:true, text:"Office 365"},
+          outlook    : {show:true, text:"Outlook"},
+          outlookcom : {show:true, text:"Outlook.com"},
+          yahoo      : {show:true, text:"Yahoo"}
+        });
+      };
+  </script>
+
+  <style type="text/css">
+    .material-icons {
+      font-family: 'Material Icons';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 24px; /* Preferred icon size */
+      display: inline-block;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+
+      /* Support for all WebKit browsers. */
+      -webkit-font-smoothing: antialiased;
+      /* Support for Safari and Chrome. */
+      text-rendering: optimizeLegibility;
+
+      /* Support for Firefox. */
+      -moz-osx-font-smoothing: grayscale;
+
+      /* Support for IE. */
+      font-feature-settings: 'liga';
+    }
+    body {
+      font-family: 'Lato', sans-serif;
+      background-color: #ffffff;
+      box-sizing: border-box;
+}
+
+    /* BEGIN CALENDAR CSS */
+.calendar
+{
+
+    padding: 20px;
+    background-color: #fafafa;
+
+    padding:20px;
+    margin-bottom:20px;
+}
+
+.calendar .dropdown
+{
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    color: #123456;
+    text-align: center;
+    font-size: 14pt;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 30px;
+    padding-right: 30px;
+    width: 160px;
+    left: 0px;
+    z-index: 2000;
+}
+
+.calendar .dropdown .dropdown-item
+{
+    cursor:pointer;
+    opacity: .7;
+    transition: .5s opacity;
+}
+
+.calendar .dropdown .dropdown-item:hover
+{
+    opacity: 1;
+}
+
+.calendar .years
+{
+    display:none;
+}
+
+.calendar .title
+{
+    text-align:center;
+    font-size:20pt;
+}
+
+.calendar .calendar-btn
+{
+    float: left;
+    background-color: #123456;
+    color: white;
+    text-align: center;
+    font-size: 14pt;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    position: relative;
+    width: 20%;
+    cursor: pointer;
+    transition: .5s background-color;
+}
+
+.calendar .calendar-btn:hover{
+    background-color:#1f71a1;
+}
+
+.calendar .year-btn
+{
+    float:right;
+}
+
+.day_selected {
+  background-color:#123456;
+  cursor:pointer;
+  float:left;
+  width: 12%;
+  margin: 1%;
+  padding: 1%;
+  font-size:13pt;
+  text-align:center;
+  border-radius: 10px;
+  color:white;
+}
+
+.calendar .calendar-dates .days .day
+{
+    cursor:pointer;
+    float:left;
+    width: 12%;
+    margin: 1%;
+    padding: 1%;
+    font-size:13pt;
+    text-align:center;
+    border-radius: 10px;
+    /*border: solid 1px #ddd;*/
+    /*background-color:#fff*/
+}
+
+.calendar .calendar-dates .days .day.blank
+{
+    background-color: white;
+    border:none;
+}
+
+.calendar .calendar-dates .days .day.selected
+{
+    background-color: #123456;
+    color: white;
+    cursor:pointer;
+    opacity: .5;
+    transition: .5s opacity;
+}
+
+.calendar .calendar-dates .days .day.selected:hover
+{
+    opacity: 1;
+}
+
+.calendar .calendar-dates .days .day.label
+{
+    height: 28px;
+    background-color: #fafafa;
+    color: black;
+    border:none;
+    font-weight:bold;
+    font-size:12px;
+}
+
+.days {
+  //background-color:#fff;
+}
+
+.clear{
+    clear:both;
+}
+
+/*@media only screen and (max-width: 960px) {
+    .calendar{
+        width: 100%;
+        margin: 0px;
+        margin: 0px;
+        box-sizing: border-box;
+        position: relative;
+        left: 0px;
+    }*/
+}
+    /* END CALENDAR CSS */
+
+
+
+
+    .nav {
+      text-align: center;
+      padding: 4px;
+      font-size: 14px;
+    }
+
+    .spacing {
+      padding:1px;
+    }
+
+    .nav a {
+      display: inline-block;
+      margin: 0 4px;
+    }
+    a,
+    a:visited,
+    a:active {
+      color: #000;
+    }
+
+
+    .place_pill {
+      padding: 12px;
+      padding-right:0px;
+      background: #fff;
+      border-bottom:1px #f0f0f0 solid;
+      /* box-shadow: 1px 1px 1px #eee; */
+    }
+
+
+    .top_section {
+      clear:both;
+      text-align:center;
+      display:table-cell;
+      width:100%;
+      margin-bottom:5px;
+    }
+
+    .time {
+      display: table-cell;
+      vertical-align:top;
+      width: 66px;
+      text-align:left;
+      font-size:14px;
+    }
+
+    .class_details {
+      display: table-cell;
+      vertical-align:top;
+      text-align:left;
+    }
+
+    .bottom_section {
+
+
+      display: table-cell;
+      width:100%;
+      vertical-align:top;
+    }
+
+    .instagram_pill {
+
+      vertical-align:middle;
+    }
+
+    .instagram_pill a {
+      text-decoration: none;
+      background: #fafafa;
+      border: 1px solid #fafafa;
+      padding: 5px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      color: #000;
+      font-size:12px;
+      word-wrap:break-word;
+      margin-right:15px;
+      width:115px;
+    }
+
+
+    .instagram_pill img {
+      margin-right:10px;
+    }
+
+
+    .submit_pill a  {
+
+      font-weight:bold;
+      font-size:14px;
+      word-wrap:break-word;
+      margin-right:15px;
+      text-decoration: none;
+
+    }
+
+
+
+
+
+
+    .cal_icon {
+
+      vertical-align:middle;
+      width: 115px;
+      background: #fafafa;
+      border-radius:10px;
+      padding:5px;
+      margin-top:5px;
+    }
+
+    .cal_icon a {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      color: #000;
+    }
+
+    .cal_icon img {
+      margin-right:10px;
+    }
+    .gofundme_pill {
+      margin: 20px 0px;
+    }
+
+    .gofundme_pill a {
+      text-decoration: none;
+      background: rgb(0, 195, 103);
+      border: 1px solid rgb(0, 195, 103);
+      padding: 15px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      color: white;
+    }
+
+    .gofundme_pill img {
+      margin-right: 10px;
+    }
+
+    .lucky_pill {
+      margin: 20px 0px;
+    }
+
+    .lucky_pill a {
+      text-decoration: none;
+      background: #F28F3B;
+
+      padding: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      color: white;
+    }
+
+    ol {
+      list-style: none;
+      padding-left: 2rem;
+      counter-reset: circle-counter;
+    }
+
+    ol li {
+      counter-increment: circle-counter;
+    }
+    ol li:before {
+      border: 1px solid black;
+      content: counter(circle-counter);
+      width: 1.5rem;
+      height: 1.5rem;
+      position: absolute;
+      border-radius: 4px;
+      text-align: center;
+      line-height: 1.5rem;
+      margin-left: -2rem;
+    }
+
+    #header {
+    background-color: #fff123;
+    width:100%;
+}
+
+.class_type {
+  font-size:10px;
+  text-transform: uppercase;
+  color:gray;
+}
+
+.class_name {
+  font-size:14px;
+  font-weight:bold;
+  text-transform:uppercase;
+}
+
+.class_provider {
+  font-size:12px;
+  color:gray;
+}
+
+.class_description {
+  font-size:11px;
+  color:#000;
+}
+
+.class_businessname {
+  font-size:10px;
+  color:gray;
+}
+
+.class_instructor_venmo {
+  font-size:10px;
+  color:gray;
+}
+
+.duration {
+  color:gray;
+}
+
+.button {
+    white-space: nowrap;
+    padding:22px;
+}
+.selected_day {
+  font-size:16px;
+  margin:14px;
+  margin-top:24px;
+}
+
+.nav {
+  text-align: center;
+  padding: 4px;
+  font-size: 14px;
+}
+.nav a {
+  display: inline-block;
+  margin: 0 4px;
+}
+a,
+a:visited,
+a:active {
+  color: #000;
+}
+</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css" />
+</head>
+
+<body onload="onBodyLoad();">
+
+
+  <div class="mw7 center">
+    <div style="padding-bottom:16px; padding-left:15px;">
+      <div style="font-size:30px; margin-top:20px; font-weight:bold">
+        <img src ="./assets/goinglivelogo.png" style="width:140px;" />
+        <div style="float:right; font-size:12px; font-weight:bold; padding-top:7px;" class="submit_pill"><a style="border-radius:4px; text-align:center; color:#123456" target="_blank" href="http://bit.ly/goingliveco">Add Class</a></div>
+      </div>
+    </div>
+
+
+  <div class="fl w-100 pt10" style="margin-top:15px">
+
+<!-- START CALENDAR CODE -->
+
+<div class="calendar" id="calendar" style="font-size:26px; text-align:center;">
+<span id="instructor_name"></span><br />
+<img id="instructor_photo" style="border-radius:50%;height:100px;margin-top: 16px;">
+  <div id="profile_description" style="font-size:14px; text-align:left; margin-top:10px;"></div>
+  <div style=" margin-top:10px; text-align:center; width:100%">
+    <div style="display:inline-block;  width:110px; font-size:12px; background-color:#123456; padding:8px; border-radius:5px; margin-top:10px;">
+        <a href="" style="color:#ffffff; text-decoration:none;">Venmo</a>
+    </div>
+    <div style="display:inline-block; font-size:12px; width: 110px; background-color:#123456; padding:8px; border-radius:5px; margin-top:10px;">
+        <a href="" style="color:#ffffff; text-decoration:none;">Website</a>
+    </div>
+    <div style="clear:both;"></div>
+  </div>
+</div>
+
+<!-- END Calendar code -->
+
+  <div id="placeholder">
+    <!--<div class="selected_day" id="selected_day"></div>
+    <div id="sheet" style="margin-bottom:15px;"></div>-->
+  </div>
+    <div id="content_container">
+      <!--<div class="selected_day" id="selected_day"></div>
+      <div id="sheet" style="margin-bottom:15px;"></div>-->
+    </div>
+
+    <!--
+    <div class="place_pill">
+      <div class="time">
+        <div>10:00am</div>
+        <div class="duration">(45 min)</div>
+      </div>
+      <div class="class_details">
+        <div class="spacing class_type">YOGA</div>
+        <div class="spacing class_name">Yoga Fundamentals</div>
+        <div class="spacing class_provider">Yoga to the People</div>
+        <div class="spacing class_instructor">Ashley Jones</div>
+        <div class="spacing class_instructor_venmo">Venmo: <a href="">@ashleyjones</a></div>
+      </div>
+
+      <div class="bottom_section">
+        <div class="instagram_pill">
+          <a target="_blank" href="http://venmo.com/nowahelp">
+            <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@test
+          </a>
+        </div>
+
+        <div class="cal_icon">
+          <a target="_blank" href="http://venmo.com/nowahelp">
+            <img src="https://static.thenounproject.com/png/48021-200.png" />
+          </a>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="place_pill">
+      <div class="time">
+        <div>10:00am</div>
+        <div class="duration">(45 min)</div>
+      </div>
+      <div class="class_details">
+        <div class="spacing class_type">YOGA</div>
+        <div class="spacing class_name">Yoga Fundamentals</div>
+        <div class="spacing class_provider">Yoga to the People</div>
+        <div class="spacing class_instructor">Ashley Jones</div>
+        <div class="spacing class_instructor_venmo">Venmo: <a href="">@ashleyjones</a></div>
+      </div>
+
+      <div class="bottom_section">
+        <div class="instagram_pill">
+          <a target="_blank" href="http://venmo.com/nowahelp">
+            <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="28px;">@test
+          </a>
+        </div>
+
+        <div class="cal_icon">
+          <a target="_blank" href="http://venmo.com/nowahelp">
+            <img src="https://static.thenounproject.com/png/48021-200.png" />
+          </a>
+        </div>
+
+      </div>
+    </div>-->
+
+
+
+
+
+</div>
+<script
+  type="text/javascript"
+  src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"
+></script>
+</body></html>
