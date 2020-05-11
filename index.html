@@ -3,7 +3,7 @@
   <!-- include source files here... -->
 
 
-
+  <script src="https://kit.fontawesome.com/b4c6ecc833.js" crossorigin="anonymous"></script>
   <script>
     /* Warning: all the code on this page is very sloppy! caveat emptor */
     /* configuration */
@@ -11,34 +11,140 @@
     var REGISTER_FORM_URL =
       'https://docs.google.com/forms/d/e/1FAIpQLSeMcjm3_RjhNfOMBFkHYrn-R9iMijbBBil2cud4Bki2-sn2qQ/viewform';
     var SHEET = [];
-    var JSON_URL = `https://spreadsheets.google.com/feeds/cells/${SPREADSHEET_ID}/1/public/full?alt=json`;
+    //var JSON_URL = `https://spreadsheets.google.com/feeds/cells/${SPREADSHEET_ID}/1/public/full?alt=json`;
+    var JSON_URL = 'https://goinglive.hglabs.com/api?schedule=full';
+
+    /* When the user clicks on the filter,
+    toggle between hiding and showing the dropdown content */
+    function showFilter() {
+      document.getElementById("myDropdown").classList.toggle("show");
+    }
+
+    function filter(class_type) {
+      console.log("filter: " + class_type);
+    }
+
+    // Close the dropdown menu if the user clicks outside of it
+    window.onclick = function(event) {
+      if (!event.target.matches('.dropbtn')) {
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        var i;
+        for (i = 0; i < dropdowns.length; i++) {
+          var openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    }
+
+    var convertDateTimeStringToDateAndTimeString = function(start_datetime) {
+
+      //DATE
+      var date_year_first = start_datetime.split("T")[0];
+      var date_array = date_year_first.split("-");
+      var year = parseInt(date_array[0], 10);
+      var month = parseInt(date_array[1], 10);
+      var date = parseInt(date_array[2], 10);
+
+
+      //TIME
+      var time_with_timezone = start_datetime.split("T")[1];
+
+      var time_and_timezone_array;
+      var time_zone_plus_or_minus; //east or west of UTC
+      if(time_with_timezone.includes("-")) {
+        time_and_timezone_array = time_with_timezone.split("-");
+        time_zone_plus_or_minus = -1;
+      }
+      else if (time_with_timezone.includes("+")) {
+        time_and_timezone_array = time_with_timezone.split("+");
+        time_zone_plus_or_minus = 1;
+      }
+
+      var time_with_second = time_and_timezone_array[0];
+      var time_array = time_with_second.split(":");
+      var hour = time_array[0];
+      var minute = time_array[1];
+      var second = time_array[2];
+
+
+      //Take into account (a) timezone of class and (b)timezone of user
+      var time_zone = time_and_timezone_array[1];
+      var time_zone_hour = parseInt(time_zone.split(":")[0], 10);
+      var d = new Date();
+      var n = d.getTimezoneOffset()/60;
+      var numberOfHoursToAdd = -1*time_zone_plus_or_minus*time_zone_hour - n;
+      var hourInUsersTimeZone = parseInt(hour, 10) + numberOfHoursToAdd;
+
+      if(hourInUsersTimeZone < 0) {
+        hourInUsersTimeZone = hourInUsersTimeZone + 24;
+        dateObj = new Date(year, month, date);
+        dateObj.setDate(dateObj.getDate() - 1);
+        year = dateObj.getFullYear();
+        month = dateObj.getMonth();
+        date = dateObj.getDate();
+      }
+
+
+
+      var am_or_pm = 'AM';
+      if(hourInUsersTimeZone == 12) {
+        am_or_pm = 'PM';
+      }
+      else if(hourInUsersTimeZone > 12) {
+        hourInUsersTimeZone = hourInUsersTimeZone-12;
+        am_or_pm = 'PM';
+      }
+      if(hourInUsersTimeZone == 0) {
+        hourInUsersTimeZone = 12;
+      }
+
+      var time_string = hourInUsersTimeZone + ":" + minute + " " + am_or_pm;
+
+
+      var date_string = month + "/" + date + "/" + year;
+
+      return [date_string, time_string];
+    }
 
     const parseSheetResult = result => {
-      let colMap = {
-        '1': 'session_instructor',
-        '2': 'session_date',
-        '3': 'session_time',
-        '4': 'session_duration',
-        '5': 'instagram_handle',
-        '6': 'venmo_username',
-        '7': 'session_title',
-        '8': 'session_type',
-        '12': 'session_business',
-        '15': 'youtube_link',
-        '16': 'zoom_link'
-      };
       var rows = [];
-      result.feed.entry.map(e => {
-        let rowNum = parseInt(e['gs$cell'].row, 10);
-        while (rows.length < rowNum) {
-          rows.push({});
-        }
-        let rowIndex = rowNum - 1;
-        let colNum = e['gs$cell'].col;
-        let key = colMap[colNum];
-        let cellValue = e['gs$cell']['$t'];
-        rows[rowIndex][key] = cellValue;
-      });
+
+      if(result.substring(0,5) == "<pre>") {
+        result = result.substring(5, result.length);
+      }
+
+      var n = result.indexOf("[");
+      result = result.substring(n, result.length);
+
+      result = JSON.parse(result);
+
+      for(rowNum = 0; rowNum < result.length; rowNum++) {
+        rows.push({});
+        rows[rowNum]['session_title'] = result[rowNum].event_title;
+        rows[rowNum]['session_type'] = result[rowNum].event_type;
+        rows[rowNum]['platform'] = result[rowNum].platform;
+        rows[rowNum]['start_datetime'] = result[rowNum].start_datetime;
+        rows[rowNum]['start_datetime_pretty'] = result[rowNum].start_datetime_pretty;
+        rows[rowNum]['session_duration'] = result[rowNum].duration;
+        rows[rowNum]['timezone'] = result[rowNum].timezone;
+        rows[rowNum]['description'] = result[rowNum].event_description;
+        rows[rowNum]['session_instructor'] = result[rowNum].firstname + " " + result[rowNum].lastname;
+        rows[rowNum]['session_instructor_username'] = result[rowNum].username;
+        rows[rowNum]['session_business'] = result[rowNum].businessname;
+
+        var date_and_time = convertDateTimeStringToDateAndTimeString(rows[rowNum]['start_datetime']);
+
+        rows[rowNum]['session_date'] = date_and_time[0];
+        rows[rowNum]['session_time'] = date_and_time[1];
+
+        var date_obj_of_session = getDateObjectFromString(date_and_time[0], date_and_time[1]);
+        session_duration = parseInt(rows[rowNum]['session_duration'], 10);
+        rows[rowNum]['session_end_date_time_obj'] = new Date(date_obj_of_session.getTime() + session_duration*60000);
+        rows[rowNum]['session_start_date_time_obj'] = date_obj_of_session;
+
+      }
       return rows;
     };
 
@@ -153,7 +259,7 @@
       if(index == null) {
         date_obj = new Date();
         //date_obj.setTime(date_obj.getTime() + (15*60*60*1000)); // set time to 20 huors from now for testing
-        if(ARRAY_OF_ALL_DATES_IN_SHEET[0].getFullYear == date_obj.getFullYear && ARRAY_OF_ALL_DATES_IN_SHEET[0].getMonth() == date_obj.getMonth() && ARRAY_OF_ALL_DATES_IN_SHEET[0].getDate() == date_obj.getDate()) { //if the first item in the array is today
+        if(ARRAY_OF_ALL_DATES_IN_SHEET[0].getFullYear() == date_obj.getFullYear() && ARRAY_OF_ALL_DATES_IN_SHEET[0].getMonth() == date_obj.getMonth() && ARRAY_OF_ALL_DATES_IN_SHEET[0].getDate() == date_obj.getDate()) { //if the first item in the array is today
           index = 0;
         }
         else {
@@ -170,14 +276,10 @@
 
       date = mm + '/' + dd + '/' + yyyy; // The date that we're showing
 
-
-
       let content_container = document.getElementById('content_container');
 
-
-
       let day_to_show = document.createElement('div');
-      day_to_show.className = "selected_day";
+      day_to_show.className = "selected_day_fullschedule";
       day_to_show.innerHTML = getMonth(date_obj) + " " + dd + ", " + yyyy;//todo def
       day_to_show.id = "selected_day_" + mm + "/" + dd + "/" + yyyy;
       content_container.appendChild(day_to_show);
@@ -193,10 +295,14 @@
       t.style.display = "none";
 
 
-
-
-
-      var sheet_date_selected = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title && row.session_date == date);
+      var sheet_date_selected = sheet.filter(function(row) {
+        if(!!row.session_title && row.session_date == date) {
+          return true;
+        }
+        else {
+          return false;
+        }
+      });
 
       var now = new Date();
       //now.setTime(now.getTime() + (15*60*60*1000)); //TODO set the time for testing
@@ -208,18 +314,10 @@
 
       now_date = mm + '/' + dd + '/' + yyyy; // Today's date
 
-
       sheet_date_selected = sheet_date_selected.filter(function(row) {
         if(row.session_date == now_date) {
-          var date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
 
-          if(row.session_duration == null) {
-            row.session_duration = "30 min";
-          }
-          session_duration = parseInt(row.session_duration, 10);
-
-          var session_end_date_time = new Date(date_obj_of_session.getTime() + session_duration*60000);
-          if(dates.compare(now, session_end_date_time) == -1) {
+          if(dates.compare(now, row.session_end_date_time_obj) == -1) {
             return true;
           }
           else {
@@ -231,14 +329,8 @@
         }
       });
 
-
-
-
-
       sheet_date_selected
       .sort((a, b) => {
-        /*var a_date = new Date(yyyy, mm, dd, getHour(a.session_time), getMinute(a.session_time));
-        var b_date = new Date(yyyy, mm, dd, getHour(b.session_time), getMinute(b.session_time));*/
 
         var a_date = getDateObjectFromString(a.session_date, a.session_time);
         var b_date = getDateObjectFromString(b.session_date, b.session_time);
@@ -246,79 +338,23 @@
         return dates.compare(a_date, b_date);
       })
       .map((row, i) => {
-          date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
           let outer = document.createElement('div');
           outer.className = `place_pill`;
-          /*var instructor_name;
-          var class_date;
-          var class_time;
-          var class_duration;
-          var instagram_handle;
-          var venmo_username;
-          var session_title;
-          var session_type;*/
 
-          ['session_instructor', 'session_date', 'session_time', 'session_duration', 'instagram_handle', 'venmo_username', 'session_title', 'session_type'].map(k => {
-            let div = document.createElement('div');
-            div.className = `div_content_${k}`;
-            div.innerHTML = "row: " + i + ", column:  " + k + ", value: " + row[k];
-
-          });
-
-
-          var session_date_object = new Date(yyyy, mm-1, dd);
-
-
-          var instructor_string;
-          if(row['session_instructor'] != null && row['venmo_username'] != null) {
-            instructor_string = `${row['session_instructor']}<br>Venmo: <a href="http://venmo.com/${row['venmo_username']}">@${row['venmo_username']}</a>`;
-          }
-          else {
-            instructor_string = `${row['session_instructor']}`;
-          }
-
-          instagram_handle_display = row['instagram_handle'];
-          if(instagram_handle_display != null && instagram_handle_display.length >= 10 ) {
-            instagram_handle_display = instagram_handle_display.substring(0,9) + "...";
-          }
-
-          session_business_youtube_zoom_display = row['session_business'];
-          if(session_business_youtube_zoom_display != null && session_business_youtube_zoom_display.length >= 12 ) {
-            session_business_youtube_zoom_display = session_business_youtube_zoom_display.substring(0,11) + "...";
-          }
-
-          if(row.session_duration == null) {
-            row.session_duration = "30 min";
-          }
-          duration = parseInt(row.session_duration, 10);
-          var endDate = new Date(date_obj_of_session.getTime() + duration*60000);
-          endTime = endDate.toLocaleString();
+          var endTime = row.session_end_date_time_obj.toLocaleString();
           endTime = endTime.replace(',', '');
 
 
-
-          //gcal_date = yyyy + pad(mm,2) + pad(dd,2);
-          //console.log('gcal_date: ' + gcal_date);
-          //gcal_start_time = pad(getHour(row.session_time),2) + getMinute(row.session_time) + "00";
-          //console.log('gcal_start_time: ' + gcal_start_time)
-
-          //gcal_date_start_time = gcal_date + "T" + gcal_start_time;
-          //gcal_date_end_time = gcal_date + "T" + endTime;
-
-
-          var date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
-          duration = parseInt(row.session_duration, 10);
-          var endDate = new Date(date_obj_of_session.getTime() + duration*60000);
 
           var outer_html =  `\
           <div class="top_section">\
             <div class="time">\
               <div>${row['session_time']}</div>\
-              <div class="duration">(${row['session_duration']})</div>`;
+              <div class="duration">(${row['session_duration']} min)</div>`;
 
-          if(dates.compare(now, date_obj_of_session) >= 0) //if the start time has already passed
+          if(dates.compare(now, row.session_start_date_time_obj) >= 0) //if the start time has already passed
           {
-              outer_html = outer_html + `<div class="live" style="margin-top:3px;"><img src="assets/live.png" style="width:40px;"></div>`;
+              outer_html = outer_html + `<div class="live" style="margin-top:3px; color:#ff7a00">LIVE</div>`;
           }
           outer_html = outer_html + `\
             </div>\
@@ -329,53 +365,110 @@
             outer_html = outer_html + `<div class="spacing class_provider">${row['session_business']}</div>`;
           }
 
-          if(instructor_string != null && instructor_string != "undefined") {
-            outer_html = outer_html + `<div class="spacing class_instructor">${instructor_string}</div>`;
-          }
+          outer_html = outer_html + `<div class="spacing class_description">${row['description']}</div>`;
+          outer_html = outer_html + `<div class="spacing class_instructor"><a href="instructor.html?username=${row['session_instructor_username']}">${row['session_instructor']}</a></div>`;
+
           outer_html = outer_html + `\
             </div>\
           </div>\
           <div class="bottom_section">\
             <div class="instagram_pill">`;
 
-          var location = "Watch live on ";
-          if(row['instagram_handle'] != null) {
-            outer_html = outer_html + `\
-            <a target="_blank" href="http://instagram.com/${row['instagram_handle']}">\
-              <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="18px;">@${instagram_handle_display}\
-            </a>`;
-            location = location + `Instagram: @${row['instagram_handle']}`;
+          var location;
+
+          if(!row['platform'].includes("http")) {
+            row['platform'] = "http://" + row['platform'];
           }
-          else if(row['youtube_link'] != null) {
+
+          if(row['platform'].includes("instagram")) {
+
+            var instagram_handle_display = "@" + row['platform'].split(".com/")[1];
+            if(instagram_handle_display != null && instagram_handle_display.length >= 10 ) {
+              instagram_handle_display = instagram_handle_display.substring(0,9) + "...";
+            }
+
             outer_html = outer_html + `\
-            <a target="_blank" href="${row['youtube_link']}">\
-              <img src="https://www.net-aware.org.uk/siteassets/images-and-icons/application-icons/app-icons-youtube.png?w=585&scale=down" width="18px;">${session_business_youtube_zoom_display}\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="https://instagram-brand.com/wp-content/uploads/2016/11/Instagram_AppIcon_Aug2017.png" width="18px;">${instagram_handle_display}\
             </a>`;
-            location = location + `Youtube: ${row['youtube_link']}`;
+            location = `${row['platform']}`;
           }
-          else if(row['zoom_link'] != null) {
+          else if(row['platform'].includes("youtube")) {
+
+            var display_name = row['session_business'];
+            if(display_name == null || display_name == "") {
+              display_name = row['session_instructor'];
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
             outer_html = outer_html + `\
-            <a target="_blank" href="${row['zoom_link']}">\
-              <img src="assets/zoom_logo.png" width="18px;">${session_business_youtube_zoom_display}\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="assets/youtube_logo2.png" width="18px;">${display_name}\
             </a>`;
-            location = location + `Zoom: ${row['zoom_link']}`;
+            location = `${row['platform']}`;
+          }
+          else if(row['platform'].includes("zoom")) {
+            var display_name = row['session_business'];
+            if(display_name == null || display_name == "") {
+              display_name = row['session_instructor'];
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="assets/zoom_logo2.png" width="18px;">${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+
+          else if(row['platform'].includes("facebook")) {
+            var display_name = row['session_business'];
+            if(display_name == null || display_name == "") {
+              display_name = row['session_instructor'];
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              <img src="assets/facebook_logo.png" width="18px;">${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
+          }
+
+          else {
+            var display_name = row['session_business'];
+            if(display_name == null || display_name == "") {
+              display_name = row['session_instructor'];
+            }
+            if(display_name.length >= 12 ) {
+              display_name = display_name.substring(0,11) + "...";
+            }
+
+            outer_html = outer_html + `\
+            <a target="_blank" href="${row['platform']}">\
+              ${display_name}\
+            </a>`;
+            location = `${row['platform']}`;
           }
 
           description = `${row['session_title']}`;
           if(row['session_business'] != null && row['session_business'] != 'undefined') {
             description = description + ` | ${row['session_business']}`;
           }
-          if(row['session_instructor'] != null && row['session_instructor'] != 'undefined') {
-            description = description + ` | ${row['session_instructor']}`;
-          }
+          description = description + ` | ${row['session_instructor']}`;
           description = description + " | " + location;
           outer_html = outer_html + `\
             </div>\
             <div class="cal_icon">\
             \
-                <div title="Add to Calendar" class="addeventatc" data-styling="none" style="padding:0px; background:#fafafa; font-weight:normal;">\
-                  <img src="gfx/icon-calendar-t1.svg" alt="" style="width:18px; vertical-align:middle;" />\
-                  <span style="font-size:12px; vertical-align:middle; font-family:'Lato', sans-serif">Add to Cal</span>
+                <div title="Add to Calendar" class="addeventatc" data-styling="none" style="padding-left:1px; margin:0px; background:#fafafa; font-weight:normal;">\
+                  <img src="assets/calendar-icon.png" alt="" style="width:18px; height:18px; vertical-align:middle; margin-top:0px;"/><span style="font-size:12px; color:black; margin-left:0px; padding-left:0px; vertical-align:middle; font-family:'Lato', sans-serif">Add to Cal</span>
                   <span class="start">${date} ${row['session_time']}</span>\
                   <span class="end">${endTime}</span>\
                   <span class="timezone">America/New_York</span>\
@@ -402,15 +495,6 @@
           }
         }
 
-
-
-        /*if(n == 0) {
-          date_obj.setDate(date_obj.getDate() + 1);
-          drawTable(sheet, date_obj, 1);
-        }
-        else if(n == 1) {
-
-        }*/
         index = index + 1;
 
         if(ARRAY_OF_ALL_DATES_IN_SHEET[index] != null) {
@@ -443,8 +527,6 @@
         loadCalendarDays(today.getFullYear(), today.getMonth(), today.getDate());
         changeDay(today.getFullYear(), today.getMonth(), today.getDate());//TODO: change this b/c this assumes that currently_selecte_day is the last day, bu really we want to pass in the sunday day +1.
 
-
-
       });
     };
 
@@ -464,8 +546,7 @@ function getArrayOfDates(sheet, now) {
   var array_of_all_dates_in_sheet = [];
   sheet = sheet.filter(row => row.session_title != 'Title of Session' && !!row.session_title);
   sheet_from_today_on = sheet.filter(function(row) {
-    var date_obj_of_session = getDateObjectFromString(row.session_date, row.session_time);
-    if(dates.compare(now, date_obj_of_session) == -1) {
+    if(dates.compare(now, row.session_start_date_time_obj) == -1) {
       return true;
     }
     else {
@@ -483,8 +564,7 @@ function getArrayOfDates(sheet, now) {
     return dates.compare(a_date, b_date);
   })
   .map((row, i) => {
-    date_obj_of_session = getDateObjectFromString(row.session_date);
-    array_of_all_dates_in_sheet[i] = date_obj_of_session;
+    array_of_all_dates_in_sheet[i] = row.session_start_date_time_obj;
   });
 
 
@@ -815,7 +895,7 @@ function changeDay(the_year, the_month, the_day) {
   }
   else {
     let day_to_show = document.createElement('div');
-    day_to_show.className = "selected_day";
+    day_to_show.className = "selected_day_fullschedule";
     day_to_show.innerHTML = getMonth(date) + " " + the_day + ", " + the_year;
     document.getElementById("placeholder").appendChild(day_to_show);
 
@@ -901,428 +981,7 @@ window.addEventListener('load', function () {
       };
   </script>
 
-  <style type="text/css">
-    .material-icons {
-      font-family: 'Material Icons';
-      font-weight: normal;
-      font-style: normal;
-      font-size: 24px; /* Preferred icon size */
-      display: inline-block;
-      line-height: 1;
-      text-transform: none;
-      letter-spacing: normal;
-      word-wrap: normal;
-      white-space: nowrap;
-      direction: ltr;
-
-      /* Support for all WebKit browsers. */
-      -webkit-font-smoothing: antialiased;
-      /* Support for Safari and Chrome. */
-      text-rendering: optimizeLegibility;
-
-      /* Support for Firefox. */
-      -moz-osx-font-smoothing: grayscale;
-
-      /* Support for IE. */
-      font-feature-settings: 'liga';
-    }
-    body {
-      font-family: 'Lato', sans-serif;
-      background-color: #ffffff;
-      box-sizing: border-box;
-}
-
-
-    /* BEGIN CALENDAR CSS */
-.calendar
-{
-
-    padding: 20px;
-    background-color: #fafafa;
-
-    padding:20px;
-    margin-bottom:20px;
-}
-
-.calendar .dropdown
-{
-    display: none;
-    position: absolute;
-    background-color: #fff;
-    color: #123456;
-    text-align: center;
-    font-size: 14pt;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    padding-left: 30px;
-    padding-right: 30px;
-    width: 160px;
-    left: 0px;
-    z-index: 2000;
-}
-
-.calendar .dropdown .dropdown-item
-{
-    cursor:pointer;
-    opacity: .7;
-    transition: .5s opacity;
-}
-
-.calendar .dropdown .dropdown-item:hover
-{
-    opacity: 1;
-}
-
-.calendar .years
-{
-    display:none;
-}
-
-.calendar .title
-{
-    text-align:center;
-    font-size:20pt;
-}
-
-.calendar .calendar-btn
-{
-    float: left;
-    background-color: #123456;
-    color: white;
-    text-align: center;
-    font-size: 14pt;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    position: relative;
-    width: 20%;
-    cursor: pointer;
-    transition: .5s background-color;
-}
-
-.calendar .calendar-btn:hover{
-    background-color:#1f71a1;
-}
-
-.calendar .year-btn
-{
-    float:right;
-}
-
-.day_selected {
-  background-color:#123456;
-  cursor:pointer;
-  float:left;
-  width: 12%;
-  margin: 1%;
-  padding: 1%;
-  font-size:13pt;
-  text-align:center;
-  border-radius: 10px;
-  color:white;
-}
-
-.calendar .calendar-dates .days .day
-{
-    cursor:pointer;
-    float:left;
-    width: 12%;
-    margin: 1%;
-    padding: 1%;
-    font-size:13pt;
-    text-align:center;
-    border-radius: 10px;
-    /*border: solid 1px #ddd;*/
-    /*background-color:#fff*/
-}
-
-.calendar .calendar-dates .days .day.blank
-{
-    background-color: white;
-    border:none;
-}
-
-.calendar .calendar-dates .days .day.selected
-{
-    background-color: #123456;
-    color: white;
-    cursor:pointer;
-    opacity: .5;
-    transition: .5s opacity;
-}
-
-.calendar .calendar-dates .days .day.selected:hover
-{
-    opacity: 1;
-}
-
-.calendar .calendar-dates .days .day.label
-{
-    height: 28px;
-    background-color: #fafafa;
-    color: black;
-    border:none;
-    font-weight:bold;
-    font-size:12px;
-}
-
-.days {
-  //background-color:#fff;
-}
-
-.clear{
-    clear:both;
-}
-
-/*@media only screen and (max-width: 960px) {
-    .calendar{
-        width: 100%;
-        margin: 0px;
-        margin: 0px;
-        box-sizing: border-box;
-        position: relative;
-        left: 0px;
-    }*/
-}
-    /* END CALENDAR CSS */
-
-
-
-
-    .nav {
-      text-align: center;
-      padding: 4px;
-      font-size: 14px;
-    }
-
-    .spacing {
-      padding:1px;
-    }
-
-    .nav a {
-      display: inline-block;
-      margin: 0 4px;
-    }
-    a,
-    a:visited,
-    a:active {
-      color: #457b9d;
-    }
-
-
-    .place_pill {
-      padding: 12px;
-      padding-right:0px;
-      background: #fff;
-      border-bottom:1px #f0f0f0 solid;
-      /* box-shadow: 1px 1px 1px #eee; */
-    }
-
-
-    .top_section {
-      clear:both;
-      text-align:center;
-      display:table-cell;
-      width:100%;
-      margin-bottom:5px;
-    }
-
-    .time {
-      display: table-cell;
-      vertical-align:top;
-      width: 66px;
-      text-align:left;
-      font-size:14px;
-    }
-
-    .class_details {
-      display: table-cell;
-      vertical-align:top;
-      text-align:left;
-    }
-
-    .bottom_section {
-
-
-      display: table-cell;
-      width:100%;
-      vertical-align:top;
-    }
-
-    .instagram_pill {
-
-      vertical-align:middle;
-    }
-
-    .instagram_pill a {
-      text-decoration: none;
-      background: #fafafa;
-      border: 1px solid #fafafa;
-      padding: 5px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      color: #000;
-      font-size:12px;
-      word-wrap:break-word;
-      margin-right:15px;
-      width:115px;
-    }
-
-
-    .instagram_pill img {
-      margin-right:10px;
-    }
-
-
-    .submit_pill a  {
-
-      font-weight:bold;
-      font-size:14px;
-      word-wrap:break-word;
-      margin-right:15px;
-      text-decoration: none;
-
-    }
-
-
-
-
-
-
-    .cal_icon {
-
-      vertical-align:middle;
-      width: 115px;
-      background: #fafafa;
-      border-radius:10px;
-      padding:5px;
-      margin-top:5px;
-    }
-
-    .cal_icon a {
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      color: #000;
-    }
-
-    .cal_icon img {
-      margin-right:10px;
-    }
-    .gofundme_pill {
-      margin: 20px 0px;
-    }
-
-    .gofundme_pill a {
-      text-decoration: none;
-      background: rgb(0, 195, 103);
-      border: 1px solid rgb(0, 195, 103);
-      padding: 15px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      color: white;
-    }
-
-    .gofundme_pill img {
-      margin-right: 10px;
-    }
-
-    .lucky_pill {
-      margin: 20px 0px;
-    }
-
-    .lucky_pill a {
-      text-decoration: none;
-      background: #F28F3B;
-
-      padding: 20px;
-      border-radius: 4px;
-      display: flex;
-      align-items: center;
-      color: white;
-    }
-
-    ol {
-      list-style: none;
-      padding-left: 2rem;
-      counter-reset: circle-counter;
-    }
-
-    ol li {
-      counter-increment: circle-counter;
-    }
-    ol li:before {
-      border: 1px solid black;
-      content: counter(circle-counter);
-      width: 1.5rem;
-      height: 1.5rem;
-      position: absolute;
-      border-radius: 4px;
-      text-align: center;
-      line-height: 1.5rem;
-      margin-left: -2rem;
-    }
-
-    #header {
-    background-color: #fff123;
-    width:100%;
-}
-
-.class_type {
-  font-size:10px;
-  text-transform: uppercase;
-}
-
-.class_name {
-  font-size:14px;
-  font-weight:bold;
-}
-
-.class_provider {
-  font-size:12px;
-  color:gray;
-}
-
-.class_instructor {
-  font-size:12px;
-  color:gray;
-}
-
-.class_instructor_venmo {
-  font-size:10px;
-  color:gray;
-}
-
-.duration {
-  color:gray;
-}
-
-.button {
-    white-space: nowrap;
-    padding:22px;
-}
-.selected_day {
-  font-size:24px;
-  margin:14px;
-  margin-top:24px;
-}
-
-.nav {
-  text-align: center;
-  padding: 4px;
-  font-size: 14px;
-}
-.nav a {
-  display: inline-block;
-  margin: 0 4px;
-}
-a,
-a:visited,
-a:active {
-  color: #457b9d;
-}
-</style>
+  <link rel="stylesheet" type="text/css" href="css/styles.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
@@ -1382,6 +1041,31 @@ a:active {
 </div>
 
 <!-- END Calendar code -->
+
+
+
+<!-- begin filter -->
+<!--<div class="dropdown">
+  View: <button onclick="showFilter()" class="dropbtn">ALL <i class="fas fa-caret-down"></i></button>
+  <div id="myDropdown" class="dropdown-content">
+    <a href="#">ALL</a>
+    <a href="#" onClick="filter('YOGA');">YOGA</a>
+    <a href="#">BARRE</a>
+    <a href="#">PILATES</a>
+    <a href="#">HIIT</a>
+    <a href="#">DANCE</a>
+    <a href="#">STRETCH</a>
+    <a href="#">MEDITATION</a>
+    <a href="#">CARDIO</a>
+    <a href="#">WEIGHTS</a>
+    <a href="#">STRENGTH</a>
+    <a href="#">BOXING</a>
+    <a href="#">KICKBOXING</a>
+    <a href="#">OTHER</a>
+  </div>
+</div>-->
+<!-- end filter -->
+
 
   <div id="placeholder">
     <!--<div class="selected_day" id="selected_day"></div>
