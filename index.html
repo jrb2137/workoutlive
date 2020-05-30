@@ -20,8 +20,9 @@
       document.getElementById("myDropdown").classList.toggle("show");
     }
 
-    function filter(class_type) {
+    function filterClass(class_type) {
       console.log("filter: " + class_type);
+      drawTable(SHEET, 0, class_type);
     }
 
     // Close the dropdown menu if the user clicks outside of it
@@ -254,7 +255,7 @@
     }
 }
 
-    function drawTable(sheet, index) {
+    function drawTable(sheet, index, filter) {
       var date_obj;
       if(index == null) {
         date_obj = new Date();
@@ -269,6 +270,8 @@
       else {
         date_obj = ARRAY_OF_ALL_DATES_IN_SHEET[index];
       }
+
+      console.log("in drawtable, filter: " + filter);
 
       var dd = String(date_obj.getDate());
       var mm = String(date_obj.getMonth() + 1); //January is 0, so need to add 1!
@@ -326,6 +329,20 @@
         }
         else {
           return true;
+        }
+      });
+
+      sheet_date_selected = sheet_date_selected.filter(function(row) {
+        if(filter == null) {
+          return true;
+        }
+        else if(row.session_type == filter) {
+          console.log("reached here. row.session type is the same as filter");
+          return true;
+        }
+        else {
+          console.log("row.session type is DIFFERENT FROM filter");
+          return false;
         }
       });
 
@@ -499,7 +516,7 @@
 
         if(ARRAY_OF_ALL_DATES_IN_SHEET[index] != null) {
 
-          drawTable(sheet, index);
+          drawTable(sheet, index, filter);
         }
         else {
 
@@ -995,7 +1012,7 @@ window.addEventListener('load', function () {
     <div style="padding-bottom:16px; padding-left:15px;">
       <div style="font-size:30px; margin-top:20px; font-weight:bold">
         <img src ="./assets/goinglivelogo.png" style="width:140px;" />
-        <div style="float:right; font-size:12px; font-weight:bold; padding-top:7px;" class="submit_pill"><a style="border-radius:4px; text-align:center; color:#123456" target="_blank" href="http://bit.ly/goingliveco">Add Class</a></div>
+        <div style="float:right; font-size:12px; font-weight:bold; padding-top:7px;" class="submit_pill"><a style="border-radius:4px; text-align:center; color:#123456" target="_blank" href="http://bit.ly/goingliveco">Add Class Test</a></div>
       </div>
     </div>
 
@@ -1045,11 +1062,11 @@ window.addEventListener('load', function () {
 
 
 <!-- begin filter -->
-<!--<div class="dropdown">
+<div class="dropdown">
   View: <button onclick="showFilter()" class="dropbtn">ALL <i class="fas fa-caret-down"></i></button>
   <div id="myDropdown" class="dropdown-content">
     <a href="#">ALL</a>
-    <a href="#" onClick="filter('YOGA');">YOGA</a>
+    <a href="#" onClick="filterClass('YOGA');">YOGA</a>
     <a href="#">BARRE</a>
     <a href="#">PILATES</a>
     <a href="#">HIIT</a>
@@ -1063,7 +1080,7 @@ window.addEventListener('load', function () {
     <a href="#">KICKBOXING</a>
     <a href="#">OTHER</a>
   </div>
-</div>-->
+</div>
 <!-- end filter -->
 
 
